@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>WalletCopy</RootNamespace>
+    <AssemblyName>WalletCopy</AssemblyName>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="ModernWpfUI" Version="1.0.0-rc.1" />
+  </ItemGroup>
+</Project>

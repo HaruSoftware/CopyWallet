@@ -1,0 +1,245 @@
+<UserControl x:Class="WalletCopy.Pages.DashboardPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:models="clr-namespace:WalletCopy.Models"
+             Background="Transparent" FontFamily="Arial">
+    <UserControl.Resources>
+        <Style x:Key="MetricCard" TargetType="Border">
+            <Setter Property="Background" Value="#11141C"/>
+            <Setter Property="BorderBrush" Value="#242936"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="14"/>
+            <Setter Property="Padding" Value="17"/>
+        </Style>
+        <Style x:Key="QuietLabel" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="#8C93A3"/>
+            <Setter Property="FontSize" Value="11"/>
+        </Style>
+    </UserControl.Resources>
+    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <StackPanel Margin="28,25,28,30">
+            <TextBlock Text="Visão geral" FontSize="27" FontWeight="Bold"/>
+            <TextBlock Text="Acompanhe a atividade recente das suas carteiras na Polymarket."
+                       Foreground="#8C93A3" FontSize="13" Margin="0,5,0,20"/>
+            <UniformGrid Columns="3" Margin="0,0,0,18">
+                <Border Style="{StaticResource MetricCard}" Margin="0,0,8,0">
+                    <StackPanel>
+                        <TextBlock Text="CARTEIRAS MONITORADAS" Style="{StaticResource QuietLabel}"/>
+                        <TextBlock x:Name="WalletCount" Text="0" FontSize="27" FontWeight="Bold" Margin="0,8,0,0"/>
+                    </StackPanel>
+                </Border>
+                <Border Style="{StaticResource MetricCard}" Margin="4,0">
+                    <StackPanel>
+                        <TextBlock Text="TRADES RECENTES" Style="{StaticResource QuietLabel}"/>
+                        <TextBlock x:Name="TradeCount" Text="0" FontSize="27" FontWeight="Bold" Margin="0,8,0,0"/>
+                    </StackPanel>
+                </Border>
+                <Border Style="{StaticResource MetricCard}" Margin="8,0,0,0">
+                    <StackPanel>
+                        <TextBlock Text="ÚLTIMA ATUALIZAÇÃO" Style="{StaticResource QuietLabel}"/>
+                        <TextBlock x:Name="LastUpdated" Text="—" FontSize="20" FontWeight="SemiBold" Margin="0,12,0,0"/>
+                    </StackPanel>
+                </Border>
+            </UniformGrid>
+            <Border x:Name="WalletPerformanceCard" Background="#11141C"
+                    BorderBrush="#242936" BorderThickness="1" CornerRadius="14"
+                    Padding="18" Margin="0,0,0,18" Visibility="Collapsed">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel>
+                            <TextBlock Text="Desempenho do player" FontSize="18" FontWeight="SemiBold"/>
+                            <TextBlock x:Name="PlayerAddress" Text="Selecione uma carteira"
+                                       Foreground="#A1A8B6" FontSize="12" Margin="0,4,0,0"/>
+                        </StackPanel>
+                        <Border Grid.Column="1" Background="#171C26" CornerRadius="8"
+                                Padding="9,5" VerticalAlignment="Center">
+                            <TextBlock Text="DADOS PÚBLICOS" FontSize="10" FontWeight="SemiBold"
+                                       Foreground="#A1A8B6"/>
+                        </Border>
+                    </Grid>
+                    <Grid Grid.Row="1" Margin="0,18,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="1"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="1"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="1"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel>
+                            <TextBlock Text="PNL · 1D" FontSize="11" FontWeight="SemiBold"
+                                       Foreground="#8C93A3"/>
+                            <TextBlock x:Name="DailyPnl" Text="—" FontSize="24" FontWeight="Bold"
+                                       Margin="0,7,0,0"/>
+                            <TextBlock Text="Variação no período diário"
+                                       FontSize="10" Foreground="#8C93A3" Margin="0,3,0,0"/>
+                        </StackPanel>
+                        <Border Grid.Column="1" Background="#242936" Margin="12,2"/>
+                        <StackPanel Grid.Column="2" Margin="18,0">
+                            <TextBlock Text="PNL TOTAL" FontSize="11" FontWeight="SemiBold"
+                                       Foreground="#8C93A3"/>
+                            <TextBlock x:Name="AllTimePnl" Text="—" FontSize="24" FontWeight="Bold"
+                                       Margin="0,7,0,0"/>
+                            <TextBlock Text="Realizado, aberto e rendimentos"
+                                       FontSize="10" Foreground="#8C93A3" Margin="0,3,0,0"/>
+                        </StackPanel>
+                        <Border Grid.Column="3" Background="#242936" Margin="12,2"/>
+                        <StackPanel Grid.Column="4" Margin="18,0,0,0">
+                            <TextBlock Text="EM POSIÇÕES" FontSize="11" FontWeight="SemiBold"
+                                       Foreground="#8C93A3"/>
+                            <TextBlock x:Name="PortfolioValue" Text="—" FontSize="24" FontWeight="Bold"
+                                       Margin="0,7,0,0"/>
+                            <TextBlock Text="Valor marcado a mercado · sem saldo em USDC"
+                                       FontSize="10" Foreground="#8C93A3" Margin="0,3,0,0"/>
+                        </StackPanel>
+                        <Border Grid.Column="5" Background="#242936" Margin="12,2"/>
+                        <StackPanel Grid.Column="6" Margin="18,0,0,0">
+                            <TextBlock Text="SALDO PUSD" FontSize="11" FontWeight="SemiBold"
+                                       Foreground="#8C93A3"/>
+                            <TextBlock x:Name="PusdBalance" Text="—" FontSize="24" FontWeight="Bold"
+                                       Margin="0,7,0,0"/>
+                            <TextBlock Text="Saldo disponível on-chain na Polygon"
+                                       FontSize="10" Foreground="#8C93A3" Margin="0,3,0,0"/>
+                        </StackPanel>
+                    </Grid>
+                </Grid>
+            </Border>
+            <Border Background="#11141C" BorderBrush="#242936" BorderThickness="1" CornerRadius="14">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="1"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+                    <Grid Margin="18,16">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel>
+                            <TextBlock Text="Atividade recente" FontSize="19" FontWeight="SemiBold"/>
+                            <TextBlock Text="Os trades mais recentes das carteiras que você monitora."
+                                       Foreground="#A1A8B6" FontSize="13" Margin="0,4,0,0"/>
+                        </StackPanel>
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                            <TextBlock Text="CARTEIRA" FontSize="10" FontWeight="Bold"
+                                       Foreground="#8C93A3" VerticalAlignment="Center" Margin="0,0,9,0"/>
+                            <ComboBox x:Name="WalletFilter" Width="184" Height="36"
+                                      DisplayMemberPath="ShortAddress" SelectedValuePath="Address"
+                                      SelectionChanged="WalletFilter_SelectionChanged"/>
+                        </StackPanel>
+                    </Grid>
+                    <Border Grid.Row="1" Background="#242936"/>
+                    <Grid Grid.Row="2" MinHeight="280">
+                        <ScrollViewer MaxHeight="620" VerticalScrollBarVisibility="Auto"
+                                      Background="#0B0D12">
+                            <ItemsControl x:Name="TradeList" AlternationCount="2">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate DataType="{x:Type models:WalletTrade}">
+                                        <Border CornerRadius="10" Margin="8,3" Padding="14,11">
+                                            <Border.Style>
+                                                <Style TargetType="Border">
+                                                    <Setter Property="Background" Value="#0B0D12"/>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=ContentPresenter}, Path=(ItemsControl.AlternationIndex)}"
+                                                                     Value="1">
+                                                            <Setter Property="Background" Value="#15181D"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Border.Style>
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="94"/>
+                                                    <ColumnDefinition Width="46"/>
+                                                    <ColumnDefinition Width="12"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                    <ColumnDefinition Width="190"/>
+                                                </Grid.ColumnDefinitions>
+                                                <TextBlock Text="{Binding SideLabel}" Grid.Column="0"
+                                                           FontSize="15" FontWeight="SemiBold"
+                                                           VerticalAlignment="Center" Margin="1,0"/>
+                                                <Border Grid.Column="1" Width="46" Height="46"
+                                                        Background="#F7931A" CornerRadius="9">
+                                                    <Image Source="{Binding MarketImageUrl}" Stretch="UniformToFill"
+                                                           ClipToBounds="True"/>
+                                                </Border>
+                                                <StackPanel Grid.Column="3" VerticalAlignment="Center"
+                                                            HorizontalAlignment="Left" Margin="0,0,8,0">
+                                                    <TextBlock Text="{Binding MarketTitle}" FontSize="14"
+                                                               FontWeight="SemiBold" Foreground="#F1F3F6"
+                                                               TextWrapping="Wrap" TextAlignment="Left" MaxWidth="680"/>
+                                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Left"
+                                                                Margin="0,5,0,0">
+                                                        <Border CornerRadius="7" Padding="7,3" Margin="0,0,8,0"
+                                                                HorizontalAlignment="Left">
+                                                            <Border.Style>
+                                                                <Style TargetType="Border">
+                                                                    <Setter Property="Background" Value="#123D26"/>
+                                                                    <Style.Triggers>
+                                                                        <DataTrigger Binding="{Binding IsBuy}" Value="False">
+                                                                            <Setter Property="Background" Value="#421B1B"/>
+                                                                        </DataTrigger>
+                                                                    </Style.Triggers>
+                                                                </Style>
+                                                            </Border.Style>
+                                                            <TextBlock Text="{Binding OutcomePriceLabel}" FontSize="12"
+                                                                       FontWeight="Bold">
+                                                                <TextBlock.Style>
+                                                                    <Style TargetType="TextBlock">
+                                                                        <Setter Property="Foreground" Value="#42D77D"/>
+                                                                        <Style.Triggers>
+                                                                            <DataTrigger Binding="{Binding IsBuy}" Value="False">
+                                                                                <Setter Property="Foreground" Value="#FF716A"/>
+                                                                            </DataTrigger>
+                                                                        </Style.Triggers>
+                                                                    </Style>
+                                                                </TextBlock.Style>
+                                                            </TextBlock>
+                                                        </Border>
+                                                        <TextBlock Text="{Binding SharesLabel}" FontSize="12"
+                                                                   Foreground="#929BA9" VerticalAlignment="Center"/>
+                                                        <TextBlock Text="  ·  " FontSize="12" Foreground="#687184"
+                                                                   VerticalAlignment="Center"/>
+                                                        <TextBlock Text="{Binding WalletLabel}" FontSize="12"
+                                                                   Foreground="#929BA9" VerticalAlignment="Center"/>
+                                                    </StackPanel>
+                                                </StackPanel>
+                                                <StackPanel Grid.Column="4" VerticalAlignment="Center"
+                                                            HorizontalAlignment="Right">
+                                                    <TextBlock Text="{Binding AmountLabel}" FontSize="16"
+                                                               FontWeight="SemiBold" HorizontalAlignment="Right"/>
+                                                    <TextBlock Text="{Binding NetAmountLabel}" FontSize="11"
+                                                               Foreground="#A1A8B6" HorizontalAlignment="Right"
+                                                               Margin="0,3,0,0"/>
+                                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right"
+                                                                Margin="0,4,0,0">
+                                                        <TextBlock Text="{Binding TimeAgoLabel}" FontSize="11"
+                                                                   Foreground="#A1A8B6"/>
+                                                        <TextBlock Text="  ↗" FontSize="12" Foreground="#A1A8B6"/>
+                                                    </StackPanel>
+                                                </StackPanel>
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </ScrollViewer>
+                        <TextBlock x:Name="EmptyState" Text="Adicione uma carteira para acompanhar seus trades."
+                                   Foreground="#8C93A3" FontSize="14" TextWrapping="Wrap"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center" Margin="30"/>
+                    </Grid>
+                </Grid>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

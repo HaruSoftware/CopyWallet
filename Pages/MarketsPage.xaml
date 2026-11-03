@@ -1,0 +1,47 @@
+<UserControl x:Class="WalletCopy.Pages.MarketsPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:models="clr-namespace:WalletCopy.Models"
+             Background="Transparent">
+    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <StackPanel Margin="28,25,28,30">
+            <TextBlock Text="Mercados" FontSize="27" FontWeight="Bold"/>
+            <TextBlock Text="Descubra os eventos com maior volume na Polymarket."
+                       Foreground="#8C93A3" FontSize="12" Margin="0,5,0,20"/>
+            <ItemsControl x:Name="MarketList">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate><WrapPanel/></ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate DataType="{x:Type models:MarketCard}">
+                        <Border Width="255" Height="196" Background="#171B25" CornerRadius="14"
+                                BorderBrush="#242936" BorderThickness="1" Margin="0,0,14,14"
+                                ClipToBounds="True">
+                            <Grid>
+                                <Image Source="{Binding ImageUrl}" Stretch="UniformToFill" Opacity="0.62"/>
+                                <Border VerticalAlignment="Bottom" Height="120">
+                                    <Border.Background>
+                                        <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                                            <GradientStop Color="#0010141C" Offset="0"/>
+                                            <GradientStop Color="#F514171E" Offset="1"/>
+                                        </LinearGradientBrush>
+                                    </Border.Background>
+                                </Border>
+                                <StackPanel VerticalAlignment="Bottom" Margin="14">
+                                    <TextBlock Text="{Binding Category}" FontSize="9" FontWeight="Bold"
+                                               Foreground="#64E2A2" Margin="0,0,0,6"/>
+                                    <TextBlock Text="{Binding Title}" FontSize="12" FontWeight="SemiBold"
+                                               TextWrapping="Wrap" MaxHeight="38" LineHeight="17"/>
+                                    <TextBlock Text="{Binding VolumeLabel}" FontSize="10"
+                                               Foreground="#A5ADBA" Margin="0,8,0,0"/>
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <TextBlock x:Name="EmptyState" Text="Carregando os mercados em destaque…"
+                       Foreground="#8C93A3" FontSize="12" Margin="0,15"/>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

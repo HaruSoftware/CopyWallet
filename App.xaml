@@ -1,0 +1,29 @@
+<Application x:Class="WalletCopy.App"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ui="http://schemas.modernwpf.com/2019"
+             StartupUri="MainWindow.xaml">
+    <Application.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ui:ThemeResources/>
+                <ui:FluentControlsResources UseCompactResources="False"/>
+            </ResourceDictionary.MergedDictionaries>
+
+            <SolidColorBrush x:Key="AppBackground" Color="#0B0D12"/>
+            <SolidColorBrush x:Key="PanelBackground" Color="#11141C"/>
+            <SolidColorBrush x:Key="PanelRaised" Color="#171B25"/>
+            <SolidColorBrush x:Key="BorderBrush" Color="#242936"/>
+            <SolidColorBrush x:Key="TextPrimary" Color="#F4F5F7"/>
+            <SolidColorBrush x:Key="TextSecondary" Color="#8C93A3"/>
+            <SolidColorBrush x:Key="AccentGreen" Color="#64E2A2"/>
+            <SolidColorBrush x:Key="AccentBlue" Color="#8497FF"/>
+
+            <Style TargetType="TextBlock">
+                <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
+                <Setter Property="FontFamily" Value="Arial"/>
+                <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+            </Style>
+        </ResourceDictionary>
+    </Application.Resources>
+</Application>

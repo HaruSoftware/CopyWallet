@@ -1,0 +1,303 @@
+<UserControl x:Class="WalletCopy.Pages.WalletsPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ui="http://schemas.modernwpf.com/2019"
+             xmlns:models="clr-namespace:WalletCopy.Models"
+             Background="Transparent" FontFamily="Arial">
+    <UserControl.Resources>
+        <Style x:Key="PanelCard" TargetType="Border">
+            <Setter Property="Background" Value="#11141C"/>
+            <Setter Property="BorderBrush" Value="#242936"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="14"/>
+            <Setter Property="Padding" Value="18"/>
+        </Style>
+    </UserControl.Resources>
+    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <StackPanel Margin="28,25,28,30">
+            <TextBlock Text="Carteiras" FontSize="27" FontWeight="Bold"/>
+            <TextBlock Text="Adicione endereços públicos e acompanhe trades e posições."
+                       Foreground="#8C93A3" FontSize="12" Margin="0,5,0,20"/>
+            <Border Style="{StaticResource PanelCard}" Margin="0,0,0,16">
+                <StackPanel>
+                    <TextBlock Text="Monitorar um player" FontSize="15" FontWeight="SemiBold"/>
+                    <TextBlock Text="Insira o endereço público da carteira que deseja acompanhar."
+                               FontSize="11" Foreground="#8C93A3" Margin="0,4,0,16"/>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="12"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBox x:Name="TrackedWalletInput" Height="44"
+                                 ui:ControlHelper.PlaceholderText="0x… endereço público do player"
+                                 KeyDown="TrackedWalletInput_KeyDown"/>
+                        <Button Grid.Column="2" Content="＋  Adicionar carteira" Background="#63DFA0"
+                                Foreground="#092015" Height="44" Click="TrackWallet_Click"/>
+                    </Grid>
+                    <TextBlock Text="Aceitamos somente endereços públicos. Nunca informe uma chave privada."
+                               FontSize="10" Foreground="#8C93A3" Margin="2,9,0,0"/>
+                    <Border Background="#242936" Height="1" Margin="0,18,0,15"/>
+                    <TextBlock Text="MINHA CARTEIRA · OPCIONAL" FontSize="9" Foreground="#8C93A3"
+                               FontWeight="Bold"/>
+                    <Grid Margin="0,8,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="12"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBox x:Name="OwnWalletInput" Height="42"
+                                 ui:ControlHelper.PlaceholderText="Seu endereço público para consultar posições"
+                                 KeyDown="OwnWalletInput_KeyDown"/>
+                        <Button Grid.Column="2" Content="Salvar minha carteira" Background="#232938"
+                                Height="42" Click="SetOwnWallet_Click"/>
+                    </Grid>
+                </StackPanel>
+            </Border>
+            <Border Style="{StaticResource PanelCard}" Margin="0,0,0,16">
+                <StackPanel>
+                    <Grid Margin="0,0,0,12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel>
+                            <TextBlock Text="Carteiras acompanhadas" FontSize="15" FontWeight="SemiBold"/>
+                            <TextBlock Text="Selecione um endereço para abrir suas posições."
+                                       FontSize="11" Foreground="#8C93A3" Margin="0,4,0,0"/>
+                        </StackPanel>
+                        <TextBlock x:Name="WalletCount" Grid.Column="1" Text="0 monitoradas"
+                                   FontSize="10" Foreground="#8C93A3" VerticalAlignment="Center"/>
+                    </Grid>
+                    <ItemsControl x:Name="TrackedWalletList">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate><WrapPanel/></ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate DataType="{x:Type models:TrackedWallet}">
+                                <Border Background="#171C26" BorderBrush="#303747" BorderThickness="1"
+                                        CornerRadius="12" Padding="12,10" Margin="0,0,9,9">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="10"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <Ellipse Width="7" Height="7" Fill="#64E2A2" VerticalAlignment="Center"/>
+                                        <Button Grid.Column="2" Content="{Binding ShortAddress}" Tag="{Binding Address}"
+                                                Background="Transparent" Padding="0" FontSize="11"
+                                                Click="SelectWallet_Click"/>
+                                        <Button Grid.Column="3" Content="×" Tag="{Binding Address}"
+                                                Background="Transparent" Foreground="#8C93A3" Padding="7,0"
+                                                FontSize="15" Click="RemoveWallet_Click"/>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    <TextBlock x:Name="WalletEmptyState" Text="Nenhuma carteira adicionada. Cole um endereço acima para começar."
+                               FontSize="11" Foreground="#8C93A3" TextWrapping="Wrap"
+                               HorizontalAlignment="Center" Margin="18,15"/>
+                </StackPanel>
+            </Border>
+            <Border Background="#0B0D12" BorderBrush="#242936" BorderThickness="1" CornerRadius="14"
+                    Padding="0" ClipToBounds="True">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="1"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="1"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+                    <StackPanel Margin="18,16,18,14">
+                        <TextBlock Text="Atividade da carteira" FontSize="19" FontWeight="SemiBold"/>
+                        <TextBlock x:Name="FocusedWalletAddress" Text="Selecione uma carteira monitorada"
+                                   FontSize="12" Foreground="#A1A8B6" Margin="0,4,0,0"/>
+                    </StackPanel>
+                    <Border Grid.Row="1" Background="#242936"/>
+                    <Grid Grid.Row="2" Margin="16,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <Button x:Name="PositionsTab" Content="Positions" Click="PositionsTab_Click"
+                                Background="Transparent" Foreground="#8B94A3" FontSize="15"
+                                Padding="2,12,2,10" Margin="0,0,18,0"
+                                BorderThickness="0" BorderBrush="Transparent"/>
+                        <Button x:Name="ActivityTab" Grid.Column="1" Content="Activity" Click="ActivityTab_Click"
+                                Background="Transparent" Foreground="White" FontSize="15"
+                                FontWeight="SemiBold" Padding="2,12,2,10" Margin="0,0,18,0"
+                                BorderThickness="0,0,0,2" BorderBrush="#64E2A2"/>
+                        <TextBlock Grid.Column="3" Text="ATUALIZADO AUTOMATICAMENTE"
+                                   FontSize="10" Foreground="#8C93A3" VerticalAlignment="Center"
+                                   Margin="0,0,4,0"/>
+                    </Grid>
+                    <Border Grid.Row="3" Background="#242936"/>
+                    <Grid Grid.Row="4" MinHeight="180">
+                        <Grid x:Name="ActivityPanel">
+                            <Grid>
+                                <ScrollViewer VerticalScrollBarVisibility="Auto" MaxHeight="620">
+                                    <ItemsControl x:Name="ActivityList" AlternationCount="2">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate DataType="{x:Type models:WalletTrade}">
+                                                <Border CornerRadius="10" Margin="8,3" Padding="14,11">
+                                                    <Border.Style>
+                                                        <Style TargetType="Border">
+                                                            <Setter Property="Background" Value="#0B0D12"/>
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=ContentPresenter}, Path=(ItemsControl.AlternationIndex)}"
+                                                                             Value="1">
+                                                                    <Setter Property="Background" Value="#15181D"/>
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </Border.Style>
+                                                    <Grid>
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="94"/>
+                                                            <ColumnDefinition Width="46"/>
+                                                            <ColumnDefinition Width="12"/>
+                                                            <ColumnDefinition Width="*"/>
+                                                            <ColumnDefinition Width="190"/>
+                                                        </Grid.ColumnDefinitions>
+                                                        <TextBlock Text="{Binding SideLabel}" Grid.Column="0"
+                                                                   FontSize="15" FontWeight="SemiBold"
+                                                                   VerticalAlignment="Center" Margin="1,0"/>
+                                                        <Border Grid.Column="1" Width="46" Height="46"
+                                                                Background="#F7931A" CornerRadius="9">
+                                                            <Image Source="{Binding MarketImageUrl}" Stretch="UniformToFill"
+                                                                   ClipToBounds="True"/>
+                                                        </Border>
+                                                        <StackPanel Grid.Column="3" VerticalAlignment="Center"
+                                                                    HorizontalAlignment="Left" Margin="0,0,8,0">
+                                                            <TextBlock Text="{Binding MarketTitle}" FontSize="14"
+                                                                       FontWeight="SemiBold" Foreground="#F1F3F6"
+                                                                       TextWrapping="Wrap" TextAlignment="Left"
+                                                                       MaxWidth="680"/>
+                                                            <StackPanel Orientation="Horizontal"
+                                                                        HorizontalAlignment="Left" Margin="0,5,0,0">
+                                                                <Border CornerRadius="7" Padding="7,3"
+                                                                        Margin="0,0,8,0"
+                                                                        HorizontalAlignment="Left">
+                                                                    <Border.Style>
+                                                                        <Style TargetType="Border">
+                                                                            <Setter Property="Background" Value="#123D26"/>
+                                                                            <Style.Triggers>
+                                                                                <DataTrigger Binding="{Binding IsBuy}" Value="False">
+                                                                                    <Setter Property="Background" Value="#421B1B"/>
+                                                                                </DataTrigger>
+                                                                            </Style.Triggers>
+                                                                        </Style>
+                                                                    </Border.Style>
+                                                                    <TextBlock Text="{Binding OutcomePriceLabel}"
+                                                                               FontSize="12" FontWeight="Bold">
+                                                                        <TextBlock.Style>
+                                                                            <Style TargetType="TextBlock">
+                                                                                <Setter Property="Foreground" Value="#42D77D"/>
+                                                                                <Style.Triggers>
+                                                                                    <DataTrigger Binding="{Binding IsBuy}" Value="False">
+                                                                                        <Setter Property="Foreground" Value="#FF716A"/>
+                                                                                    </DataTrigger>
+                                                                                </Style.Triggers>
+                                                                            </Style>
+                                                                        </TextBlock.Style>
+                                                                    </TextBlock>
+                                                                </Border>
+                                                                <TextBlock Text="{Binding SharesLabel}" FontSize="12"
+                                                                           Foreground="#929BA9"
+                                                                           VerticalAlignment="Center"/>
+                                                            </StackPanel>
+                                                        </StackPanel>
+                                                        <StackPanel Grid.Column="4" VerticalAlignment="Center"
+                                                                    HorizontalAlignment="Right">
+                                                            <TextBlock Text="{Binding AmountLabel}" FontSize="16"
+                                                                       FontWeight="SemiBold" HorizontalAlignment="Right"/>
+                                                            <TextBlock Text="{Binding NetAmountLabel}" FontSize="11"
+                                                                       Foreground="#A1A8B6" HorizontalAlignment="Right"
+                                                                       Margin="0,3,0,0"/>
+                                                            <StackPanel Orientation="Horizontal"
+                                                                        HorizontalAlignment="Right" Margin="0,4,0,0">
+                                                                <TextBlock Text="{Binding TimeAgoLabel}" FontSize="11"
+                                                                           Foreground="#A1A8B6"/>
+                                                                <TextBlock Text="  ↗" FontSize="12" Foreground="#A1A8B6"/>
+                                                            </StackPanel>
+                                                        </StackPanel>
+                                                    </Grid>
+                                                </Border>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </ScrollViewer>
+                                <TextBlock x:Name="ActivityEmptyState"
+                                           Text="Selecione uma carteira para acompanhar as atividades."
+                                           FontSize="14" Foreground="#8C93A3" TextWrapping="Wrap"
+                                           HorizontalAlignment="Center" VerticalAlignment="Center" Margin="22"/>
+                            </Grid>
+                        </Grid>
+                        <Grid x:Name="PositionPanel" Visibility="Collapsed">
+                            <ScrollViewer VerticalScrollBarVisibility="Auto" MaxHeight="560">
+                                <ItemsControl x:Name="PositionList">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate DataType="{x:Type models:WalletPosition}">
+                                            <Border Background="#15191F" CornerRadius="11" Margin="8,4"
+                                                    Padding="12,11">
+                                                <Grid>
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="46"/>
+                                                        <ColumnDefinition Width="12"/>
+                                                        <ColumnDefinition Width="*"/>
+                                                        <ColumnDefinition Width="112"/>
+                                                    </Grid.ColumnDefinitions>
+                                                    <Border Width="44" Height="44" Background="#222936" CornerRadius="9">
+                                                        <Image Source="{Binding ImageUrl}" Stretch="UniformToFill"/>
+                                                    </Border>
+                                                    <StackPanel Grid.Column="2" VerticalAlignment="Center">
+                                                        <TextBlock Text="{Binding MarketTitle}" FontSize="12"
+                                                                   FontWeight="SemiBold" TextWrapping="Wrap"/>
+                                                        <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                                                            <TextBlock Text="{Binding Outcome}" FontSize="10"
+                                                                       Foreground="#AAB0BD"/>
+                                                            <TextBlock Text="  ·  " FontSize="10" Foreground="#687184"/>
+                                                            <TextBlock Text="{Binding SharesLabel}" FontSize="10"
+                                                                       Foreground="#929BA9"/>
+                                                        </StackPanel>
+                                                    </StackPanel>
+                                                    <StackPanel Grid.Column="3" VerticalAlignment="Center"
+                                                                HorizontalAlignment="Right">
+                                                        <TextBlock Text="{Binding ValueLabel}" FontSize="13"
+                                                                   FontWeight="SemiBold" HorizontalAlignment="Right"/>
+                                                        <TextBlock Text="{Binding PnlLabel}" FontSize="10"
+                                                                   HorizontalAlignment="Right" Margin="0,4,0,0">
+                                                            <TextBlock.Style>
+                                                                <Style TargetType="TextBlock">
+                                                                    <Setter Property="Foreground" Value="#64E2A2"/>
+                                                                    <Style.Triggers>
+                                                                        <DataTrigger Binding="{Binding IsPnlPositive}" Value="False">
+                                                                            <Setter Property="Foreground" Value="#F28C8C"/>
+                                                                        </DataTrigger>
+                                                                    </Style.Triggers>
+                                                                </Style>
+                                                            </TextBlock.Style>
+                                                        </TextBlock>
+                                                    </StackPanel>
+                                                </Grid>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </ScrollViewer>
+                            <TextBlock x:Name="PositionEmptyState"
+                                       Text="Selecione uma carteira para consultar posições."
+                                       FontSize="12" Foreground="#8C93A3" TextWrapping="Wrap"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center" Margin="22"/>
+                        </Grid>
+                    </Grid>
+                </Grid>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>
