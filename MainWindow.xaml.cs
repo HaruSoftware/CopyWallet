@@ -28,6 +28,7 @@ public partial class MainWindow : Window
     private readonly DashboardPage _dashboardPage = new();
     private readonly WalletsPage _walletsPage = new();
     private readonly MarketsPage _marketsPage = new();
+    private readonly PaperTradingPage _paperTradingPage = new();
     private readonly CopyTradesPage _copyTradesPage = new();
     private readonly SettingsPage _settingsPage = new();
     private readonly DispatcherTimer _refreshTimer = new() { Interval = TimeSpan.FromSeconds(15) };
@@ -54,7 +55,9 @@ public partial class MainWindow : Window
         _walletsPage.CopyTradeRequested += CopyTradeRequested;
         _walletsPage.CopyAllTradesRequested += CopyAllTradesRequested;
         _walletsPage.AutoCopyChanged += AutoCopyChanged;
+        _paperTradingPage.AccountChanged += PaperAccountChanged;
         _copyTradesPage.SetRecords(_copiedTrades);
+        _paperTradingPage.SetAccount(new PaperAccount());
         _settingsPage.ThemeChanged += SettingsPageThemeChanged;
         _refreshTimer.Tick += async (_, _) => await RefreshDataAsync();
         Loaded += MainWindow_Loaded;
@@ -103,6 +106,7 @@ public partial class MainWindow : Window
                 {
                     _copiedTrades.Add(record);
                 }
+                _paperTradingPage.SetAccount(settings.PaperAccount ?? new PaperAccount());
             }
 
             _focusedWalletAddress = IsValidWalletAddress(settings.FocusedWalletAddress)
@@ -144,6 +148,7 @@ public partial class MainWindow : Window
         {
             "Wallets" => ("Carteiras", _walletsPage),
             "Markets" => ("Mercados", _marketsPage),
+            "PaperTrading" => ("Terminal simulado", _paperTradingPage),
             "CopyTrades" => ("Trades copiados", _copyTradesPage),
             "Settings" => ("Configurações", _settingsPage),
             _ => ("Visão geral", _dashboardPage)
@@ -154,6 +159,7 @@ public partial class MainWindow : Window
         SetNavigationState(DashboardNavigation, page == "Dashboard");
         SetNavigationState(WalletsNavigation, page == "Wallets");
         SetNavigationState(MarketsNavigation, page == "Markets");
+        SetNavigationState(PaperTradingNavigation, page == "PaperTrading");
         SetNavigationState(CopyTradesNavigation, page == "CopyTrades");
         SetNavigationState(SettingsNavigation, page == "Settings");
     }
@@ -341,6 +347,7 @@ public partial class MainWindow : Window
         {
             _autoCopyWalletAddresses.Add(change.Address);
         }
+
         else
         {
             _autoCopyWalletAddresses.Remove(change.Address);
@@ -357,6 +364,12 @@ public partial class MainWindow : Window
         NotificationPopup.ShowInformation(change.Enabled
             ? "Cópia automática ativada para esta carteira."
             : "Cópia automática desativada para esta carteira.");
+    }
+
+    private async void PaperAccountChanged(object? sender, PaperAccount account)
+    {
+        await SaveSettingsAsync();
+        NotificationPopup.ShowInformation("Ordem registrada apenas na conta virtual.");
     }
 
     private bool RegisterCopiedTrade(WalletTrade trade, CopyTradeDraft? draft = null)
@@ -453,6 +466,7 @@ public partial class MainWindow : Window
             if (marketsTask.Result.Succeeded)
             {
                 _marketsPage.SetMarkets(marketsTask.Result.Markets);
+                _paperTradingPage.SetMarkets(marketsTask.Result.Markets);
             }
 
             CurrentWalletLabel.Text = string.IsNullOrWhiteSpace(_focusedWalletAddress)
@@ -604,7 +618,8 @@ public partial class MainWindow : Window
                 HasCompletedInitialSetup = true,
                 TrackedWalletAddresses = _trackedWallets.Select(wallet => wallet.Address).ToList(),
                 AutoCopyWalletAddresses = _autoCopyWalletAddresses.ToList(),
-                CopiedTrades = _copiedTrades.ToList()
+                CopiedTrades = _copiedTrades.ToList(),
+                PaperAccount = _paperTradingPage.GetAccount()
             });
             return true;
         }

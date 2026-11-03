@@ -10,8 +10,12 @@ public sealed class CopyTradeRecord
     public string AmountLabel { get; set; } = "";
     public string CopyMode { get; set; } = "Automatico";
     public string Position { get; set; } = "";
+    public string OrderType { get; set; } = "";
+    public string TokenId { get; set; } = "";
+    public string ConditionId { get; set; } = "";
     public decimal RequestedSize { get; set; }
     public decimal RequestedPrice { get; set; }
+    public decimal MaxSlippagePercent { get; set; }
     public DateTime TradeTimestamp { get; set; }
     public DateTime CopiedAt { get; set; }
 
@@ -20,7 +24,8 @@ public sealed class CopyTradeRecord
         : $"{WalletAddress[..Math.Min(6, WalletAddress.Length)]}…{WalletAddress[^Math.Min(4, WalletAddress.Length)..]}";
 
     public string TradeLabel => $"{Side} · {Outcome}";
-    public string CopyDetailsLabel => $"{CopyMode} · {Position} · {RequestedSize:N2} shares @ {RequestedPrice:P0}";
+    public string CopyDetailsLabel => $"{CopyMode} · {Position} · {OrderType} · {RequestedSize:N2} shares @ {RequestedPrice:P0}"
+                                      + (MaxSlippagePercent > 0m ? $" · slippage {MaxSlippagePercent:N2}%" : "");
     public string CopiedAtLabel => CopiedAt.ToLocalTime().ToString("dd/MM HH:mm");
 
     public static CopyTradeRecord FromTrade(WalletTrade trade, string key, CopyTradeDraft? draft = null) => new()
@@ -37,6 +42,10 @@ public sealed class CopyTradeRecord
         Position = draft?.Position ?? trade.Outcome,
         RequestedSize = draft?.Size ?? trade.Size,
         RequestedPrice = draft?.Price ?? trade.Price,
+        OrderType = draft?.OrderType ?? "FOK",
+        TokenId = draft?.TokenId ?? trade.TokenId,
+        ConditionId = draft?.ConditionId ?? trade.ConditionId,
+        MaxSlippagePercent = draft?.MaxSlippagePercent ?? 0m,
         TradeTimestamp = trade.Timestamp,
         CopiedAt = DateTime.UtcNow
     };

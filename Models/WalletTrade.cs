@@ -13,6 +13,9 @@ public sealed class WalletTrade
         : $"{WalletAddress[..Math.Min(6, WalletAddress.Length)]}…{WalletAddress[^Math.Min(4, WalletAddress.Length)..]}";
     public string MarketImageUrl { get; init; } = "";
     public string MarketSlug { get; init; } = "";
+    public string TokenId { get; init; } = "";
+    public string ConditionId { get; init; } = "";
+    public string TransactionHash { get; init; } = "";
     public decimal Price { get; init; }
     public decimal Size { get; init; }
     public decimal UsdcSize { get; init; }

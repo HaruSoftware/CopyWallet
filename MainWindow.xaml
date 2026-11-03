@@ -109,6 +109,15 @@
                             <TextBlock Text="Mercados" VerticalAlignment="Center"/>
                         </StackPanel>
                     </Button>
+                    <Button x:Name="PaperTradingNavigation" Style="{StaticResource NavigationButton}"
+                            Tag="PaperTrading" Click="Navigate_Click">
+                        <StackPanel Orientation="Horizontal">
+                            <fa:ImageAwesome Icon="Exchange" Width="16" Height="16"
+                                             Foreground="{Binding RelativeSource={RelativeSource AncestorType=Button}, Path=Foreground}"
+                                             Margin="0,0,12,0"/>
+                            <TextBlock Text="Terminal simulado" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
                     <Button x:Name="CopyTradesNavigation" Style="{StaticResource NavigationButton}"
                             Tag="CopyTrades" Click="Navigate_Click">
                         <StackPanel Orientation="Horizontal">

@@ -10,6 +10,10 @@ A aba **Trades copiados** funciona atualmente como uma simulação local. Cada t
 
 Ao marcar um trade individualmente, o aplicativo abre uma confirmação com os modos **Automático** (posição, preço e tamanho observados) e **Manual** (posição Up/Down, tamanho em shares e preço por share). Os dados escolhidos são registrados no histórico local para preparar a futura integração de execução.
 
+O rascunho de ordem também preserva os identificadores públicos do ativo (`token_id` e `condition_id`), o lado, tipo de ordem (FOK, FAK, GTC ou GTD) e slippage máximo. Esses campos são preparação estrutural; assinatura, chave privada e envio de ordens permanecem desativados até uma etapa explícita de execução segura.
+
+O **Terminal simulado** usa os mercados públicos carregados da Gamma API, mas opera uma conta virtual local com saldo inicial de $10.000. Ele permite selecionar mercado e outcome, informar shares, preço, tipo de ordem e slippage, além de simular split de dois outcomes. O serviço aplica limite por trade, limite de exposição, saldo virtual, fills parciais para GTC e registro de auditoria. A conta e as ordens são salvas localmente em `%APPDATA%\WalletCopy\settings.json`; nenhuma transação on-chain ou ordem da Polymarket é criada.
+
 ## Requisitos
 
 - Windows

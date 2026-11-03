@@ -18,6 +18,7 @@ public partial class CopyTradeDialog : Window
         AutomaticSummary.Text = $"{trade.SideLabel} · {trade.OutcomePriceLabel} · {trade.SharesLabel} · {trade.AmountLabel}";
         SizeInput.Text = trade.Size.ToString("0.####", CultureInfo.InvariantCulture);
         PriceInput.Text = trade.Price.ToString("0.####", CultureInfo.InvariantCulture);
+        OrderTypeInput.SelectedIndex = 0;
     }
 
     private void Mode_Changed(object sender, RoutedEventArgs e)
@@ -40,6 +41,10 @@ public partial class CopyTradeDialog : Window
             {
                 Mode = "Automatico",
                 Position = _trade.Outcome,
+                Side = _trade.Side,
+                OrderType = "FOK",
+                TokenId = _trade.TokenId,
+                ConditionId = _trade.ConditionId,
                 Size = _trade.Size,
                 Price = _trade.Price
             };
@@ -61,12 +66,24 @@ public partial class CopyTradeDialog : Window
             return;
         }
 
+        if (!decimal.TryParse(SlippageInput.Text, NumberStyles.Number, CultureInfo.InvariantCulture,
+                out var slippage) || slippage < 0m || slippage > 100m)
+        {
+            ValidationText.Text = "Informe um slippage entre 0 e 100%.";
+            return;
+        }
+
         Draft = new CopyTradeDraft
         {
             Mode = "Manual",
             Position = UpPosition.IsChecked == true ? "Up" : "Down",
+            Side = _trade.Side,
+            OrderType = (OrderTypeInput.SelectedValue as string) ?? "FOK",
+            TokenId = _trade.TokenId,
+            ConditionId = _trade.ConditionId,
             Size = size,
-            Price = price
+            Price = price,
+            MaxSlippagePercent = slippage
         };
         DialogResult = true;
     }

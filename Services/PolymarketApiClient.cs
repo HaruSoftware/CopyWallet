@@ -106,6 +106,9 @@ public sealed class PolymarketApiClient
                 WalletAddress = ReadString(item, "proxy_wallet", "proxyWallet", "user") ?? walletAddress,
                 MarketImageUrl = imageUrl ?? "",
                 MarketSlug = marketSlug,
+                TokenId = ReadString(item, "token_id", "asset_id", "assetId") ?? "",
+                ConditionId = ReadString(item, "condition_id", "conditionId") ?? "",
+                TransactionHash = ReadString(item, "transaction_hash", "transactionHash") ?? "",
                 Price = ReadDecimal(item, "price"),
                 Size = ReadDecimal(item, "size"),
                 UsdcSize = ReadTradeValue(item),
@@ -280,12 +283,34 @@ public sealed class PolymarketApiClient
         return document.RootElement.EnumerateArray()
             .Select(item => new MarketCard
             {
+                MarketId = ReadString(item, "id", "conditionId", "condition_id") ?? "",
+                Slug = ReadString(item, "slug", "event_slug") ?? "",
                 Title = ReadString(item, "title", "question") ?? "Mercado sem título",
                 ImageUrl = ReadString(item, "image", "icon") ?? "",
+                Volume24h = ReadDecimal(item, "volume24hr", "volume_24hr", "volume"),
                 VolumeLabel = FormatVolume(ReadDecimal(item, "volume24hr", "volume_24hr", "volume")),
-                Category = ReadString(item, "category") ?? "Em alta"
+                Category = ReadString(item, "category") ?? "Em alta",
+                Outcomes = ReadMarketOutcomes(item)
             })
             .ToArray();
+    }
+
+    private static List<MarketOutcome> ReadMarketOutcomes(JsonElement item)
+    {
+        if (!item.TryGetProperty("markets", out var markets)
+           || markets.ValueKind != JsonValueKind.Array)
+        {
+           return [];
+        }
+
+        return markets.EnumerateArray()
+           .SelectMany(market =>
+           {
+               var name = ReadString(market, "question", "title") ?? "Outcome";
+               var tokenId = ReadString(market, "clobTokenIds", "token_id", "tokenId") ?? "";
+               return new[] { new MarketOutcome { Name = name, TokenId = tokenId, Price = ReadDecimal(market, "lastTradePrice", "price") } };
+           })
+           .ToList();
     }
 
     private static HttpClient CreateHttpClient()

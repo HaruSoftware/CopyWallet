@@ -42,4 +42,5 @@ public sealed class UserSettings
     public List<string> TrackedWalletAddresses { get; set; } = [];
     public List<string> AutoCopyWalletAddresses { get; set; } = [];
     public List<CopyTradeRecord> CopiedTrades { get; set; } = [];
+    public PaperAccount PaperAccount { get; set; } = new();
 }
