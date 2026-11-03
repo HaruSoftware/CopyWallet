@@ -7,15 +7,15 @@
         <StackPanel Margin="28,25,28,30">
             <TextBlock Text="Mercados" FontSize="27" FontWeight="Bold"/>
             <TextBlock Text="Descubra os eventos com maior volume na Polymarket."
-                       Foreground="#8C93A3" FontSize="12" Margin="0,5,0,20"/>
+                       Foreground="{DynamicResource ThemeSecondary}" FontSize="12" Margin="0,5,0,20"/>
             <ItemsControl x:Name="MarketList">
                 <ItemsControl.ItemsPanel>
                     <ItemsPanelTemplate><WrapPanel/></ItemsPanelTemplate>
                 </ItemsControl.ItemsPanel>
                 <ItemsControl.ItemTemplate>
                     <DataTemplate DataType="{x:Type models:MarketCard}">
-                        <Border Width="255" Height="196" Background="#171B25" CornerRadius="14"
-                                BorderBrush="#242936" BorderThickness="1" Margin="0,0,14,14"
+                        <Border Width="255" Height="196" Background="{DynamicResource ThemePanelRaised}" CornerRadius="14"
+                                BorderBrush="{DynamicResource ThemeBorder}" BorderThickness="1" Margin="0,0,14,14"
                                 ClipToBounds="True">
                             <Grid>
                                 <Image Source="{Binding ImageUrl}" Stretch="UniformToFill" Opacity="0.62"/>
@@ -29,11 +29,11 @@
                                 </Border>
                                 <StackPanel VerticalAlignment="Bottom" Margin="14">
                                     <TextBlock Text="{Binding Category}" FontSize="9" FontWeight="Bold"
-                                               Foreground="#64E2A2" Margin="0,0,0,6"/>
+                                               Foreground="{DynamicResource ThemeAccent}" Margin="0,0,0,6"/>
                                     <TextBlock Text="{Binding Title}" FontSize="12" FontWeight="SemiBold"
                                                TextWrapping="Wrap" MaxHeight="38" LineHeight="17"/>
                                     <TextBlock Text="{Binding VolumeLabel}" FontSize="10"
-                                               Foreground="#A5ADBA" Margin="0,8,0,0"/>
+                                               Foreground="{DynamicResource ThemeMuted}" Margin="0,8,0,0"/>
                                 </StackPanel>
                             </Grid>
                         </Border>
@@ -41,7 +41,8 @@
                 </ItemsControl.ItemTemplate>
             </ItemsControl>
             <TextBlock x:Name="EmptyState" Text="Carregando os mercados em destaque…"
-                       Foreground="#8C93A3" FontSize="12" Margin="0,15"/>
+                       Foreground="{DynamicResource ThemeSecondary}" FontSize="12" Margin="0,15"/>
         </StackPanel>
     </ScrollViewer>
 </UserControl>
+

@@ -10,19 +10,71 @@
                 <ui:FluentControlsResources UseCompactResources="False"/>
             </ResourceDictionary.MergedDictionaries>
 
-            <SolidColorBrush x:Key="AppBackground" Color="#0B0D12"/>
-            <SolidColorBrush x:Key="PanelBackground" Color="#11141C"/>
-            <SolidColorBrush x:Key="PanelRaised" Color="#171B25"/>
-            <SolidColorBrush x:Key="BorderBrush" Color="#242936"/>
-            <SolidColorBrush x:Key="TextPrimary" Color="#F4F5F7"/>
-            <SolidColorBrush x:Key="TextSecondary" Color="#8C93A3"/>
-            <SolidColorBrush x:Key="AccentGreen" Color="#64E2A2"/>
-            <SolidColorBrush x:Key="AccentBlue" Color="#8497FF"/>
+            <SolidColorBrush x:Key="ThemeBackground" Color="#0B0D12"/>
+            <SolidColorBrush x:Key="ThemeSidebar" Color="#0E1118"/>
+            <SolidColorBrush x:Key="ThemePanel" Color="#11141C"/>
+            <SolidColorBrush x:Key="ThemePanelRaised" Color="#171B25"/>
+            <SolidColorBrush x:Key="ThemeBorder" Color="#242936"/>
+            <SolidColorBrush x:Key="ThemeBorderStrong" Color="#303747"/>
+            <SolidColorBrush x:Key="ThemeText" Color="#F4F5F7"/>
+            <SolidColorBrush x:Key="ThemeSecondary" Color="#8C93A3"/>
+            <SolidColorBrush x:Key="ThemeMuted" Color="#A1A8B6"/>
+            <SolidColorBrush x:Key="ThemeNav" Color="#AAB0BD"/>
+            <SolidColorBrush x:Key="ThemeLabel" Color="#687081"/>
+            <SolidColorBrush x:Key="ThemeDim" Color="#626A7A"/>
+            <SolidColorBrush x:Key="ThemeControl" Color="#1B212C"/>
+            <SolidColorBrush x:Key="ThemeSuccessBackground" Color="#20362D"/>
+            <SolidColorBrush x:Key="ThemeErrorBackground" Color="#421B1B"/>
+            <SolidColorBrush x:Key="ThemeAccent" Color="#64E2A2"/>
+            <SolidColorBrush x:Key="ThemeAccentBlue" Color="#8497FF"/>
+            <SolidColorBrush x:Key="ThemePending" Color="#E8B867"/>
+            <SolidColorBrush x:Key="ThemeError" Color="#F28C8C"/>
+            <SolidColorBrush x:Key="ThemeAccentText" Color="#092015"/>
 
             <Style TargetType="TextBlock">
-                <Setter Property="Foreground" Value="{StaticResource TextPrimary}"/>
+                <Setter Property="Foreground" Value="{DynamicResource ThemeText}"/>
                 <Setter Property="FontFamily" Value="Arial"/>
                 <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+            </Style>
+
+            <Style TargetType="Button">
+                <Setter Property="Foreground" Value="{DynamicResource ThemeText}"/>
+                <Setter Property="Background" Value="{DynamicResource ThemeControl}"/>
+                <Setter Property="BorderBrush" Value="{DynamicResource ThemeBorder}"/>
+                <Setter Property="BorderThickness" Value="1"/>
+                <Setter Property="Padding" Value="12,8"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="Button">
+                            <Border x:Name="ButtonSurface"
+                                    Background="{TemplateBinding Background}"
+                                    BorderBrush="{TemplateBinding BorderBrush}"
+                                    BorderThickness="{TemplateBinding BorderThickness}"
+                                    CornerRadius="8"
+                                    SnapsToDevicePixels="True">
+                                <ContentPresenter
+                                    HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                    VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                                    Margin="{TemplateBinding Padding}"
+                                    Content="{TemplateBinding Content}"
+                                    ContentTemplate="{TemplateBinding ContentTemplate}"
+                                    ContentStringFormat="{TemplateBinding ContentStringFormat}"/>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="ButtonSurface" Property="BorderBrush"
+                                            Value="{DynamicResource ThemeBorderStrong}"/>
+                                </Trigger>
+                                <Trigger Property="IsPressed" Value="True">
+                                    <Setter TargetName="ButtonSurface" Property="Opacity" Value="0.72"/>
+                                </Trigger>
+                                <Trigger Property="IsEnabled" Value="False">
+                                    <Setter TargetName="ButtonSurface" Property="Opacity" Value="0.45"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
             </Style>
         </ResourceDictionary>
     </Application.Resources>

@@ -2,7 +2,9 @@
 
 Aplicativo desktop WPF para acompanhar carteiras públicas e posições da Polymarket. A interface é apenas de leitura: não solicita chaves privadas e não envia, altera ou cancela ordens.
 
-A interface usa [ModernWPF da Kinnara](https://github.com/Kinnara/ModernWpf), com tema Fluent escuro, janela moderna e placeholders acessíveis. As páginas **Visão geral**, **Carteiras**, **Mercados** e **Trades copiados** são navegadas separadamente. Notificações popup apresentam confirmações, avisos e erros e desaparecem automaticamente.
+A interface usa [ModernWPF da Kinnara](https://github.com/Kinnara/ModernWpf), com tema Fluent claro/escuro, janela moderna e placeholders acessíveis. As páginas **Visão geral**, **Carteiras**, **Mercados**, **Trades copiados** e **Configurações** são navegadas separadamente. Notificações popup apresentam confirmações, avisos e erros e desaparecem automaticamente.
+
+A aba **Configurações** permite escolher o tema **Sistema**, **Claro** ou **Escuro**. A escolha é aplicada à interface e salva localmente em `%APPDATA%\WalletCopy\settings.json`.
 
 ## Requisitos
 

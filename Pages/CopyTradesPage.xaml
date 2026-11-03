@@ -5,24 +5,25 @@
     <Grid>
         <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" MaxWidth="520"
                     Margin="36">
-            <Border Width="66" Height="66" Background="#202638" CornerRadius="20"
+            <Border Width="66" Height="66" Background="{DynamicResource ThemeControl}" CornerRadius="20"
                     HorizontalAlignment="Center" Margin="0,0,0,22">
-                <TextBlock Text="⇄" FontSize="31" Foreground="#AAB5FF"
+                <TextBlock Text="⇄" FontSize="31" Foreground="{DynamicResource ThemeAccentBlue}"
                            HorizontalAlignment="Center" VerticalAlignment="Center"/>
             </Border>
             <TextBlock Text="Área de trades copiados" FontSize="25" FontWeight="Bold"
                        HorizontalAlignment="Center"/>
             <TextBlock Text="Este espaço está reservado para a futura experiência de acompanhamento dos trades copiados."
-                       FontSize="12" Foreground="#8C93A3" TextWrapping="Wrap"
+                       FontSize="12" Foreground="{DynamicResource ThemeSecondary}" TextWrapping="Wrap"
                        TextAlignment="Center" HorizontalAlignment="Center" Margin="0,10,0,20"/>
-            <Border Background="#14241E" BorderBrush="#254536" BorderThickness="1"
+            <Border Background="{DynamicResource ThemeSuccessBackground}" BorderBrush="{DynamicResource ThemeBorderStrong}" BorderThickness="1"
                     CornerRadius="16" Padding="12,8" HorizontalAlignment="Center">
                 <StackPanel Orientation="Horizontal">
-                    <Ellipse Width="6" Height="6" Fill="#64E2A2" Margin="0,0,8,0"/>
+                    <Ellipse Width="6" Height="6" Fill="{DynamicResource ThemeAccent}" Margin="0,0,8,0"/>
                     <TextBlock Text="MODO DE LEITURA · ORDENS DESATIVADAS" FontSize="9"
-                               FontWeight="Bold" Foreground="#64E2A2"/>
+                               FontWeight="Bold" Foreground="{DynamicResource ThemeAccent}"/>
                 </StackPanel>
             </Border>
         </StackPanel>
     </Grid>
 </UserControl>
+

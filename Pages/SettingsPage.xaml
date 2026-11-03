@@ -1,0 +1,44 @@
+<UserControl x:Class="WalletCopy.Pages.SettingsPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ui="http://schemas.modernwpf.com/2019"
+             Background="Transparent" FontFamily="Arial">
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Margin="28,25,28,30" MaxWidth="720">
+            <TextBlock Text="Configurações" FontSize="27" FontWeight="Bold"/>
+            <TextBlock Text="Personalize a aparência do Wallet Copy. As preferências ficam salvas localmente."
+                       Foreground="{DynamicResource ThemeSecondary}" FontSize="13" Margin="0,5,0,20"
+                       TextWrapping="Wrap"/>
+            <Border Background="{DynamicResource ThemePanel}" BorderBrush="{DynamicResource ThemeBorder}"
+                    BorderThickness="1" CornerRadius="14" Padding="18">
+                <StackPanel>
+                    <TextBlock Text="Aparência" FontSize="16" FontWeight="SemiBold"/>
+                    <TextBlock Text="Escolha o tema da interface. Sistema acompanha a preferência do Windows."
+                               Foreground="{DynamicResource ThemeSecondary}" FontSize="11"
+                               Margin="0,5,0,16" TextWrapping="Wrap"/>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="220"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel VerticalAlignment="Center">
+                            <TextBlock Text="Tema" FontSize="13" FontWeight="SemiBold"/>
+                            <TextBlock Text="Claro, escuro ou definido pelo sistema"
+                                       Foreground="{DynamicResource ThemeSecondary}" FontSize="11"
+                                       Margin="0,3,0,0"/>
+                        </StackPanel>
+                        <ComboBox x:Name="ThemeSelector" Grid.Column="1" Height="38"
+                                  SelectedValuePath="Tag"
+                                  SelectionChanged="ThemeSelector_SelectionChanged">
+                            <ComboBoxItem Tag="System" Content="Sistema"/>
+                            <ComboBoxItem Tag="Light" Content="Claro"/>
+                            <ComboBoxItem Tag="Dark" Content="Escuro"/>
+                        </ComboBox>
+                    </Grid>
+                </StackPanel>
+            </Border>
+            <TextBlock Text="As configurações são armazenadas em %APPDATA%\WalletCopy\settings.json."
+                       Foreground="{DynamicResource ThemeDim}" FontSize="10" Margin="3,12,0,0"/>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

@@ -62,6 +62,16 @@ public sealed class PolymarketApiClient
                 slug => GetFeeScheduleAsync(slug!, cancellationToken),
                 StringComparer.OrdinalIgnoreCase);
         await Task.WhenAll(feeScheduleTasks.Values);
+        var imageSlugs = tradeItems
+            .Select(item => ReadString(item, "event_slug", "slug"))
+            .Where(slug => !string.IsNullOrWhiteSpace(slug))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+        var imageTasks = imageSlugs.ToDictionary(
+            slug => slug!,
+            slug => GetMarketImageAsync(slug!, cancellationToken),
+            StringComparer.OrdinalIgnoreCase);
+        await Task.WhenAll(imageTasks.Values);
 
         return tradeItems.Select(item =>
         {
@@ -73,6 +83,20 @@ public sealed class PolymarketApiClient
             var feeSchedule = isTaker && feeScheduleTasks.TryGetValue(marketSlug, out feeScheduleTask)
                 ? feeScheduleTask.Result
                 : FeeSchedule.NoFees;
+            var imageUrl = ReadString(
+                item,
+                "icon",
+                "image",
+                "market_icon",
+                "market_image",
+                "event_icon",
+                "event_image");
+            imageUrl ??= ReadNestedImageUrl(item, "market", "event", "metadata");
+            if (string.IsNullOrWhiteSpace(imageUrl)
+                && imageTasks.TryGetValue(marketSlug, out var imageTask))
+            {
+                imageUrl = imageTask.Result;
+            }
 
             return new WalletTrade
             {
@@ -80,7 +104,7 @@ public sealed class PolymarketApiClient
                 Outcome = ReadString(item, "outcome") ?? "—",
                 Side = ReadString(item, "side") ?? ReadString(item, "type") ?? "TRADE",
                 WalletAddress = ReadString(item, "proxy_wallet", "proxyWallet", "user") ?? walletAddress,
-                MarketImageUrl = ReadString(item, "icon", "image") ?? "",
+                MarketImageUrl = imageUrl ?? "",
                 MarketSlug = marketSlug,
                 Price = ReadDecimal(item, "price"),
                 Size = ReadDecimal(item, "size"),
@@ -106,7 +130,14 @@ public sealed class PolymarketApiClient
             {
                 MarketTitle = ReadString(item, "title", "market_title") ?? "Mercado sem título",
                 Outcome = ReadString(item, "outcome") ?? "—",
-                ImageUrl = ReadString(item, "icon", "image") ?? "",
+                ImageUrl = ReadString(
+                    item,
+                    "icon",
+                    "image",
+                    "market_icon",
+                    "market_image",
+                    "event_icon",
+                    "event_image") ?? "",
                 CurrentSize = ReadDecimal(item, "current_size", "currentSize"),
                 AveragePrice = ReadDecimal(item, "avg_price", "avgPrice"),
                 CurrentValue = ReadDecimal(item, "current_value", "currentValue"),
@@ -330,6 +361,46 @@ public sealed class PolymarketApiClient
         }
     }
 
+    private static async Task<string> GetMarketImageAsync(
+            string marketSlug,
+            CancellationToken cancellationToken)
+        {
+            try
+            {
+                using var document = await GetJsonAsync(
+                    $"https://gamma-api.polymarket.com/events/slug/{Uri.EscapeDataString(marketSlug)}",
+                    cancellationToken);
+                var root = document.RootElement;
+                var image = ReadString(root, "image", "icon", "market_image", "event_image");
+                if (!string.IsNullOrWhiteSpace(image))
+                {
+                    return image;
+                }
+
+                if (root.TryGetProperty("markets", out var markets)
+                    && markets.ValueKind == JsonValueKind.Array)
+                {
+                    foreach (var market in markets.EnumerateArray())
+                    {
+                        image = ReadString(market, "image", "icon");
+                        if (!string.IsNullOrWhiteSpace(image))
+                        {
+                            return image;
+                        }
+                    }
+
+                }
+            }
+            catch (Exception exception) when (
+                exception is HttpRequestException
+                or TaskCanceledException
+                or JsonException
+                or InvalidDataException)
+            {
+            }
+            return "";
+        }
+
     private static IEnumerable<JsonElement> ReadData(JsonElement root)
     {
         if (root.ValueKind == JsonValueKind.Array)
@@ -361,6 +432,24 @@ public sealed class PolymarketApiClient
             if (item.TryGetProperty(name, out var value) && value.ValueKind != JsonValueKind.Null)
             {
                 return value.ValueKind == JsonValueKind.String ? value.GetString() : value.ToString();
+            }
+        }
+
+        return null;
+    }
+
+    private static string? ReadNestedImageUrl(JsonElement item, params string[] objectNames)
+    {
+        foreach (var objectName in objectNames)
+        {
+            if (item.TryGetProperty(objectName, out var nested)
+                && nested.ValueKind == JsonValueKind.Object)
+            {
+                var image = ReadString(nested, "image", "icon", "url", "image_url", "imageUrl");
+                if (!string.IsNullOrWhiteSpace(image))
+                {
+                    return image;
+                }
             }
         }
 

@@ -6,8 +6,8 @@
              Background="Transparent" FontFamily="Arial">
     <UserControl.Resources>
         <Style x:Key="PanelCard" TargetType="Border">
-            <Setter Property="Background" Value="#11141C"/>
-            <Setter Property="BorderBrush" Value="#242936"/>
+            <Setter Property="Background" Value="{DynamicResource ThemePanel}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource ThemeBorder}"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="CornerRadius" Value="14"/>
             <Setter Property="Padding" Value="18"/>
@@ -17,28 +17,32 @@
         <StackPanel Margin="28,25,28,30">
             <TextBlock Text="Carteiras" FontSize="27" FontWeight="Bold"/>
             <TextBlock Text="Adicione endereços públicos e acompanhe trades e posições."
-                       Foreground="#8C93A3" FontSize="12" Margin="0,5,0,20"/>
+                       Foreground="{DynamicResource ThemeSecondary}" FontSize="12" Margin="0,5,0,20"/>
             <Border Style="{StaticResource PanelCard}" Margin="0,0,0,16">
                 <StackPanel>
                     <TextBlock Text="Monitorar um player" FontSize="15" FontWeight="SemiBold"/>
                     <TextBlock Text="Insira o endereço público da carteira que deseja acompanhar."
-                               FontSize="11" Foreground="#8C93A3" Margin="0,4,0,16"/>
+                               FontSize="11" Foreground="{DynamicResource ThemeSecondary}" Margin="0,4,0,16"/>
                     <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="12"/>
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
-                        <TextBox x:Name="TrackedWalletInput" Height="44"
-                                 ui:ControlHelper.PlaceholderText="0x… endereço público do player"
+                        <TextBox x:Name="TrackedWalletInput" Height="50"
+                                 Padding="14,0"
+                                 FontSize="13"
+                                 HorizontalContentAlignment="Left"
+                                 VerticalContentAlignment="Center"
+                                 ui:ControlHelper.PlaceholderText="Cole aqui o endereço público (0x...)"
                                  KeyDown="TrackedWalletInput_KeyDown"/>
-                        <Button Grid.Column="2" Content="＋  Adicionar carteira" Background="#63DFA0"
-                                Foreground="#092015" Height="44" Click="TrackWallet_Click"/>
+                        <Button Grid.Column="2" Content="＋  Adicionar carteira" Background="{DynamicResource ThemeAccent}"
+                                Foreground="{DynamicResource ThemeAccentText}" Height="50" Click="TrackWallet_Click"/>
                     </Grid>
                     <TextBlock Text="Aceitamos somente endereços públicos. Nunca informe uma chave privada."
-                               FontSize="10" Foreground="#8C93A3" Margin="2,9,0,0"/>
-                    <Border Background="#242936" Height="1" Margin="0,18,0,15"/>
-                    <TextBlock Text="MINHA CARTEIRA · OPCIONAL" FontSize="9" Foreground="#8C93A3"
+                               FontSize="10" Foreground="{DynamicResource ThemeSecondary}" Margin="2,9,0,0"/>
+                    <Border Background="{DynamicResource ThemeBorder}" Height="1" Margin="0,18,0,15"/>
+                    <TextBlock Text="MINHA CARTEIRA · OPCIONAL" FontSize="9" Foreground="{DynamicResource ThemeSecondary}"
                                FontWeight="Bold"/>
                     <Grid Margin="0,8,0,0">
                         <Grid.ColumnDefinitions>
@@ -49,9 +53,12 @@
                         <TextBox x:Name="OwnWalletInput" Height="42"
                                  ui:ControlHelper.PlaceholderText="Seu endereço público para consultar posições"
                                  KeyDown="OwnWalletInput_KeyDown"/>
-                        <Button Grid.Column="2" Content="Salvar minha carteira" Background="#232938"
+                        <Button Grid.Column="2" Content="Salvar minha carteira" Background="{DynamicResource ThemeControl}"
                                 Height="42" Click="SetOwnWallet_Click"/>
                     </Grid>
+                    <TextBlock x:Name="OwnWalletStatus" Text="Nenhuma carteira própria vinculada."
+                               FontSize="10" Foreground="{DynamicResource ThemeSecondary}"
+                               Margin="2,8,0,0" TextWrapping="Wrap"/>
                 </StackPanel>
             </Border>
             <Border Style="{StaticResource PanelCard}" Margin="0,0,0,16">
@@ -64,10 +71,10 @@
                         <StackPanel>
                             <TextBlock Text="Carteiras acompanhadas" FontSize="15" FontWeight="SemiBold"/>
                             <TextBlock Text="Selecione um endereço para abrir suas posições."
-                                       FontSize="11" Foreground="#8C93A3" Margin="0,4,0,0"/>
+                                       FontSize="11" Foreground="{DynamicResource ThemeSecondary}" Margin="0,4,0,0"/>
                         </StackPanel>
                         <TextBlock x:Name="WalletCount" Grid.Column="1" Text="0 monitoradas"
-                                   FontSize="10" Foreground="#8C93A3" VerticalAlignment="Center"/>
+                                   FontSize="10" Foreground="{DynamicResource ThemeSecondary}" VerticalAlignment="Center"/>
                     </Grid>
                     <ItemsControl x:Name="TrackedWalletList">
                         <ItemsControl.ItemsPanel>
@@ -75,33 +82,38 @@
                         </ItemsControl.ItemsPanel>
                         <ItemsControl.ItemTemplate>
                             <DataTemplate DataType="{x:Type models:TrackedWallet}">
-                                <Border Background="#171C26" BorderBrush="#303747" BorderThickness="1"
-                                        CornerRadius="12" Padding="12,10" Margin="0,0,9,9">
-                                    <Grid>
+                                <Border Background="{DynamicResource ThemePanelRaised}" BorderBrush="{DynamicResource ThemeBorderStrong}" BorderThickness="1"
+                                        CornerRadius="10" Padding="10,8" Margin="0,0,8,8" MinWidth="300" MaxWidth="520"
+                                        Tag="{Binding Address}" MouseLeftButtonUp="TrackedWalletCard_MouseLeftButtonUp">
+                                    <Grid MinHeight="38" MouseEnter="TrackedWalletCard_MouseEnter"
+                                          MouseLeave="TrackedWalletCard_MouseLeave">
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="Auto"/>
-                                            <ColumnDefinition Width="10"/>
-                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="8"/>
+                                            <ColumnDefinition Width="*"/>
                                             <ColumnDefinition Width="Auto"/>
                                         </Grid.ColumnDefinitions>
-                                        <Ellipse Width="7" Height="7" Fill="#64E2A2" VerticalAlignment="Center"/>
-                                        <Button Grid.Column="2" Content="{Binding ShortAddress}" Tag="{Binding Address}"
-                                                Background="Transparent" Padding="0" FontSize="11"
-                                                Click="SelectWallet_Click"/>
-                                        <Button Grid.Column="3" Content="×" Tag="{Binding Address}"
-                                                Background="Transparent" Foreground="#8C93A3" Padding="7,0"
-                                                FontSize="15" Click="RemoveWallet_Click"/>
+                                        <Ellipse Width="7" Height="7" Fill="{DynamicResource ThemeAccent}" VerticalAlignment="Center"/>
+                                        <TextBlock Grid.Column="2" Text="{Binding Address}" FontSize="10"
+                                                   TextWrapping="Wrap" VerticalAlignment="Center"/>
+                                        <Button x:Name="RemoveWalletButton" Grid.Column="3" Content="×" Tag="{Binding Address}"
+                                                Width="28" Height="28" Padding="0"
+                                                HorizontalContentAlignment="Center" VerticalContentAlignment="Center"
+                                                HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                Background="Transparent" Foreground="{DynamicResource ThemeSecondary}"
+                                                FontSize="15" ToolTip="{Binding Address}" Click="RemoveWallet_Click"
+                                                Opacity="0" IsHitTestVisible="False"/>
                                     </Grid>
                                 </Border>
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
                     <TextBlock x:Name="WalletEmptyState" Text="Nenhuma carteira adicionada. Cole um endereço acima para começar."
-                               FontSize="11" Foreground="#8C93A3" TextWrapping="Wrap"
+                               FontSize="11" Foreground="{DynamicResource ThemeSecondary}" TextWrapping="Wrap"
                                HorizontalAlignment="Center" Margin="18,15"/>
                 </StackPanel>
             </Border>
-            <Border Background="#0B0D12" BorderBrush="#242936" BorderThickness="1" CornerRadius="14"
+            <Border Background="{DynamicResource ThemeBackground}" BorderBrush="{DynamicResource ThemeBorder}" BorderThickness="1" CornerRadius="14"
                     Padding="0" ClipToBounds="True">
                 <Grid>
                     <Grid.RowDefinitions>
@@ -114,9 +126,9 @@
                     <StackPanel Margin="18,16,18,14">
                         <TextBlock Text="Atividade da carteira" FontSize="19" FontWeight="SemiBold"/>
                         <TextBlock x:Name="FocusedWalletAddress" Text="Selecione uma carteira monitorada"
-                                   FontSize="12" Foreground="#A1A8B6" Margin="0,4,0,0"/>
+                                   FontSize="12" Foreground="{DynamicResource ThemeMuted}" Margin="0,4,0,0"/>
                     </StackPanel>
-                    <Border Grid.Row="1" Background="#242936"/>
+                    <Border Grid.Row="1" Background="{DynamicResource ThemeBorder}"/>
                     <Grid Grid.Row="2" Margin="16,0">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto"/>
@@ -125,18 +137,32 @@
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
                         <Button x:Name="PositionsTab" Content="Positions" Click="PositionsTab_Click"
-                                Background="Transparent" Foreground="#8B94A3" FontSize="15"
-                                Padding="2,12,2,10" Margin="0,0,18,0"
+                                Background="Transparent" Foreground="{DynamicResource ThemeMuted}" FontSize="15"
+                                Width="94" Padding="2,12,2,10" Margin="0,0,8,0"
                                 BorderThickness="0" BorderBrush="Transparent"/>
                         <Button x:Name="ActivityTab" Grid.Column="1" Content="Activity" Click="ActivityTab_Click"
-                                Background="Transparent" Foreground="White" FontSize="15"
-                                FontWeight="SemiBold" Padding="2,12,2,10" Margin="0,0,18,0"
-                                BorderThickness="0,0,0,2" BorderBrush="#64E2A2"/>
-                        <TextBlock Grid.Column="3" Text="ATUALIZADO AUTOMATICAMENTE"
-                                   FontSize="10" Foreground="#8C93A3" VerticalAlignment="Center"
-                                   Margin="0,0,4,0"/>
+                                Background="Transparent" Foreground="{DynamicResource ThemeText}" FontSize="15"
+                                Width="82" Padding="2,12,2,10" Margin="0,0,8,0"
+                                BorderThickness="0,0,0,2" BorderBrush="{DynamicResource ThemeAccent}"/>
+                        <StackPanel Grid.Column="3" Orientation="Horizontal" VerticalAlignment="Center">
+                            <ComboBox x:Name="ActivityFilter" Width="132" Height="32"
+                                      SelectedValuePath="Tag" SelectionChanged="ActivityFilter_SelectionChanged">
+                                <ComboBoxItem Tag="All" Content="Todos os trades"/>
+                                <ComboBoxItem Tag="BUY" Content="Somente compras"/>
+                                <ComboBoxItem Tag="SELL" Content="Somente vendas"/>
+                            </ComboBox>
+                            <ComboBox x:Name="PositionSort" Width="132" Height="32"
+                                      SelectedValuePath="Tag" Visibility="Collapsed"
+                                      SelectionChanged="PositionSort_SelectionChanged">
+                                <ComboBoxItem Tag="Value" Content="Maior valor"/>
+                                <ComboBoxItem Tag="Pnl" Content="Maior PnL"/>
+                            </ComboBox>
+                            <TextBlock x:Name="WalletDataStatus" Text="Aguardando dados"
+                                       Width="150" FontSize="10" Foreground="{DynamicResource ThemeSecondary}"
+                                       VerticalAlignment="Center" TextWrapping="Wrap" Margin="14,0,4,0"/>
+                        </StackPanel>
                     </Grid>
-                    <Border Grid.Row="3" Background="#242936"/>
+                    <Border Grid.Row="3" Background="{DynamicResource ThemeBorder}"/>
                     <Grid Grid.Row="4" MinHeight="180">
                         <Grid x:Name="ActivityPanel">
                             <Grid>
@@ -147,19 +173,19 @@
                                                 <Border CornerRadius="10" Margin="8,3" Padding="14,11">
                                                     <Border.Style>
                                                         <Style TargetType="Border">
-                                                            <Setter Property="Background" Value="#0B0D12"/>
+                                                            <Setter Property="Background" Value="{DynamicResource ThemeBackground}"/>
                                                             <Style.Triggers>
                                                                 <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=ContentPresenter}, Path=(ItemsControl.AlternationIndex)}"
                                                                              Value="1">
-                                                                    <Setter Property="Background" Value="#15181D"/>
+                                                                    <Setter Property="Background" Value="{DynamicResource ThemePanelRaised}"/>
                                                                 </DataTrigger>
                                                             </Style.Triggers>
                                                         </Style>
                                                     </Border.Style>
-                                                    <Grid>
+                                                    <Grid MinHeight="86">
                                                         <Grid.ColumnDefinitions>
-                                                            <ColumnDefinition Width="94"/>
-                                                            <ColumnDefinition Width="46"/>
+                                                            <ColumnDefinition Width="82"/>
+                                                            <ColumnDefinition Width="64"/>
                                                             <ColumnDefinition Width="12"/>
                                                             <ColumnDefinition Width="*"/>
                                                             <ColumnDefinition Width="190"/>
@@ -167,15 +193,17 @@
                                                         <TextBlock Text="{Binding SideLabel}" Grid.Column="0"
                                                                    FontSize="15" FontWeight="SemiBold"
                                                                    VerticalAlignment="Center" Margin="1,0"/>
-                                                        <Border Grid.Column="1" Width="46" Height="46"
-                                                                Background="#F7931A" CornerRadius="9">
+                                                        <Border Grid.Column="1" Width="64" Height="64"
+                                                                Background="{DynamicResource ThemeControl}" CornerRadius="9">
                                                             <Image Source="{Binding MarketImageUrl}" Stretch="UniformToFill"
+                                                                   SnapsToDevicePixels="True"
+                                                                   RenderOptions.BitmapScalingMode="HighQuality"
                                                                    ClipToBounds="True"/>
                                                         </Border>
                                                         <StackPanel Grid.Column="3" VerticalAlignment="Center"
                                                                     HorizontalAlignment="Left" Margin="0,0,8,0">
-                                                            <TextBlock Text="{Binding MarketTitle}" FontSize="14"
-                                                                       FontWeight="SemiBold" Foreground="#F1F3F6"
+                                                            <TextBlock Text="{Binding MarketTitle}" FontSize="14" LineHeight="17"
+                                                                       FontWeight="SemiBold" Foreground="{DynamicResource ThemeText}"
                                                                        TextWrapping="Wrap" TextAlignment="Left"
                                                                        MaxWidth="680"/>
                                                             <StackPanel Orientation="Horizontal"
@@ -185,10 +213,10 @@
                                                                         HorizontalAlignment="Left">
                                                                     <Border.Style>
                                                                         <Style TargetType="Border">
-                                                                            <Setter Property="Background" Value="#123D26"/>
+                                                                            <Setter Property="Background" Value="{DynamicResource ThemeSuccessBackground}"/>
                                                                             <Style.Triggers>
                                                                                 <DataTrigger Binding="{Binding IsBuy}" Value="False">
-                                                                                    <Setter Property="Background" Value="#421B1B"/>
+                                                                                    <Setter Property="Background" Value="{DynamicResource ThemeErrorBackground}"/>
                                                                                 </DataTrigger>
                                                                             </Style.Triggers>
                                                                         </Style>
@@ -197,10 +225,10 @@
                                                                                FontSize="12" FontWeight="Bold">
                                                                         <TextBlock.Style>
                                                                             <Style TargetType="TextBlock">
-                                                                                <Setter Property="Foreground" Value="#42D77D"/>
+                                                                                <Setter Property="Foreground" Value="{DynamicResource ThemeAccent}"/>
                                                                                 <Style.Triggers>
                                                                                     <DataTrigger Binding="{Binding IsBuy}" Value="False">
-                                                                                        <Setter Property="Foreground" Value="#FF716A"/>
+                                                                                        <Setter Property="Foreground" Value="{DynamicResource ThemeError}"/>
                                                                                     </DataTrigger>
                                                                                 </Style.Triggers>
                                                                             </Style>
@@ -208,7 +236,7 @@
                                                                     </TextBlock>
                                                                 </Border>
                                                                 <TextBlock Text="{Binding SharesLabel}" FontSize="12"
-                                                                           Foreground="#929BA9"
+                                                                           Foreground="{DynamicResource ThemeMuted}"
                                                                            VerticalAlignment="Center"/>
                                                             </StackPanel>
                                                         </StackPanel>
@@ -217,13 +245,13 @@
                                                             <TextBlock Text="{Binding AmountLabel}" FontSize="16"
                                                                        FontWeight="SemiBold" HorizontalAlignment="Right"/>
                                                             <TextBlock Text="{Binding NetAmountLabel}" FontSize="11"
-                                                                       Foreground="#A1A8B6" HorizontalAlignment="Right"
+                                                                       Foreground="{DynamicResource ThemeMuted}" HorizontalAlignment="Right"
                                                                        Margin="0,3,0,0"/>
                                                             <StackPanel Orientation="Horizontal"
                                                                         HorizontalAlignment="Right" Margin="0,4,0,0">
                                                                 <TextBlock Text="{Binding TimeAgoLabel}" FontSize="11"
-                                                                           Foreground="#A1A8B6"/>
-                                                                <TextBlock Text="  ↗" FontSize="12" Foreground="#A1A8B6"/>
+                                                                           Foreground="{DynamicResource ThemeMuted}"/>
+                                                                <TextBlock Text="  ↗" FontSize="12" Foreground="{DynamicResource ThemeMuted}"/>
                                                             </StackPanel>
                                                         </StackPanel>
                                                     </Grid>
@@ -234,7 +262,7 @@
                                 </ScrollViewer>
                                 <TextBlock x:Name="ActivityEmptyState"
                                            Text="Selecione uma carteira para acompanhar as atividades."
-                                           FontSize="14" Foreground="#8C93A3" TextWrapping="Wrap"
+                                           FontSize="14" Foreground="{DynamicResource ThemeSecondary}" TextWrapping="Wrap"
                                            HorizontalAlignment="Center" VerticalAlignment="Center" Margin="22"/>
                             </Grid>
                         </Grid>
@@ -243,7 +271,7 @@
                                 <ItemsControl x:Name="PositionList">
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate DataType="{x:Type models:WalletPosition}">
-                                            <Border Background="#15191F" CornerRadius="11" Margin="8,4"
+                                            <Border Background="{DynamicResource ThemePanelRaised}" CornerRadius="11" Margin="8,4"
                                                     Padding="12,11">
                                                 <Grid>
                                                     <Grid.ColumnDefinitions>
@@ -252,18 +280,20 @@
                                                         <ColumnDefinition Width="*"/>
                                                         <ColumnDefinition Width="112"/>
                                                     </Grid.ColumnDefinitions>
-                                                    <Border Width="44" Height="44" Background="#222936" CornerRadius="9">
-                                                        <Image Source="{Binding ImageUrl}" Stretch="UniformToFill"/>
+                                                    <Border Width="44" Height="44" Background="{DynamicResource ThemeBorder}" CornerRadius="9">
+                                                        <Image Source="{Binding ImageUrl}" Stretch="UniformToFill"
+                                                               SnapsToDevicePixels="True"
+                                                               RenderOptions.BitmapScalingMode="HighQuality"/>
                                                     </Border>
                                                     <StackPanel Grid.Column="2" VerticalAlignment="Center">
                                                         <TextBlock Text="{Binding MarketTitle}" FontSize="12"
                                                                    FontWeight="SemiBold" TextWrapping="Wrap"/>
                                                         <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
                                                             <TextBlock Text="{Binding Outcome}" FontSize="10"
-                                                                       Foreground="#AAB0BD"/>
-                                                            <TextBlock Text="  ·  " FontSize="10" Foreground="#687184"/>
+                                                                       Foreground="{DynamicResource ThemeNav}"/>
+                                                            <TextBlock Text="  ·  " FontSize="10" Foreground="{DynamicResource ThemeLabel}"/>
                                                             <TextBlock Text="{Binding SharesLabel}" FontSize="10"
-                                                                       Foreground="#929BA9"/>
+                                                                       Foreground="{DynamicResource ThemeMuted}"/>
                                                         </StackPanel>
                                                     </StackPanel>
                                                     <StackPanel Grid.Column="3" VerticalAlignment="Center"
@@ -274,10 +304,10 @@
                                                                    HorizontalAlignment="Right" Margin="0,4,0,0">
                                                             <TextBlock.Style>
                                                                 <Style TargetType="TextBlock">
-                                                                    <Setter Property="Foreground" Value="#64E2A2"/>
+                                                                    <Setter Property="Foreground" Value="{DynamicResource ThemeAccent}"/>
                                                                     <Style.Triggers>
                                                                         <DataTrigger Binding="{Binding IsPnlPositive}" Value="False">
-                                                                            <Setter Property="Foreground" Value="#F28C8C"/>
+                                                                            <Setter Property="Foreground" Value="{DynamicResource ThemeError}"/>
                                                                         </DataTrigger>
                                                                     </Style.Triggers>
                                                                 </Style>
@@ -292,7 +322,7 @@
                             </ScrollViewer>
                             <TextBlock x:Name="PositionEmptyState"
                                        Text="Selecione uma carteira para consultar posições."
-                                       FontSize="12" Foreground="#8C93A3" TextWrapping="Wrap"
+                                       FontSize="12" Foreground="{DynamicResource ThemeSecondary}" TextWrapping="Wrap"
                                        HorizontalAlignment="Center" VerticalAlignment="Center" Margin="22"/>
                         </Grid>
                     </Grid>

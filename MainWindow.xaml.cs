@@ -29,10 +29,12 @@ public partial class MainWindow : Window
     private readonly WalletsPage _walletsPage = new();
     private readonly MarketsPage _marketsPage = new();
     private readonly CopyTradesPage _copyTradesPage = new();
+    private readonly SettingsPage _settingsPage = new();
     private readonly DispatcherTimer _refreshTimer = new() { Interval = TimeSpan.FromSeconds(15) };
     private string _ownWalletAddress = "";
     private string _focusedWalletAddress = "";
     private string _lastConnectionError = "";
+    private string _themePreference = "System";
     private bool _isRefreshing;
     private bool _refreshAgain;
 
@@ -44,6 +46,7 @@ public partial class MainWindow : Window
         _walletsPage.OwnWalletRequested += OwnWalletRequested;
         _walletsPage.WalletSelected += WalletSelected;
         _walletsPage.WalletRemoved += WalletRemoved;
+        _settingsPage.ThemeChanged += SettingsPageThemeChanged;
         _refreshTimer.Tick += async (_, _) => await RefreshDataAsync();
         Loaded += MainWindow_Loaded;
         Closed += (_, _) => _refreshTimer.Stop();
@@ -55,6 +58,9 @@ public partial class MainWindow : Window
         try
         {
             var settings = await _settingsService.LoadAsync();
+            _themePreference = settings.ThemePreference is "Light" or "Dark" ? settings.ThemePreference : "System";
+            App.ApplyTheme(this, _themePreference);
+            _settingsPage.SetTheme(_themePreference);
             var settingsNeedSave = !settings.HasCompletedInitialSetup;
             _ownWalletAddress = IsValidWalletAddress(settings.OwnWalletAddress)
                 ? settings.OwnWalletAddress
@@ -111,6 +117,7 @@ public partial class MainWindow : Window
             "Wallets" => ("Carteiras", _walletsPage),
             "Markets" => ("Mercados", _marketsPage),
             "CopyTrades" => ("Trades copiados", _copyTradesPage),
+            "Settings" => ("Configurações", _settingsPage),
             _ => ("Visão geral", _dashboardPage)
         };
 
@@ -120,16 +127,33 @@ public partial class MainWindow : Window
         SetNavigationState(WalletsNavigation, page == "Wallets");
         SetNavigationState(MarketsNavigation, page == "Markets");
         SetNavigationState(CopyTradesNavigation, page == "CopyTrades");
+        SetNavigationState(SettingsNavigation, page == "Settings");
+    }
+
+    private async void SettingsPageThemeChanged(object? sender, string preference)
+    {
+        _themePreference = preference;
+        App.ApplyTheme(this, _themePreference);
+        if (await SaveSettingsAsync())
+        {
+            NotificationPopup.ShowSuccess("Tema salvo localmente.");
+        }
     }
 
     private static void SetNavigationState(Button button, bool isSelected)
     {
-        button.Background = isSelected
-            ? new SolidColorBrush(Color.FromRgb(26, 32, 43))
-            : Brushes.Transparent;
-        button.Foreground = isSelected
-            ? new SolidColorBrush(Color.FromRgb(244, 245, 247))
-            : new SolidColorBrush(Color.FromRgb(170, 176, 189));
+        if (isSelected)
+        {
+            button.SetResourceReference(BackgroundProperty, "ThemeAccent");
+            button.SetResourceReference(ForegroundProperty, "ThemeAccentText");
+            button.SetResourceReference(BorderBrushProperty, "ThemeAccent");
+        }
+        else
+        {
+            button.Background = Brushes.Transparent;
+            button.SetResourceReference(ForegroundProperty, "ThemeNav");
+            button.BorderBrush = Brushes.Transparent;
+        }
     }
 
     private async void AddWalletRequested(object? sender, string address)
@@ -143,6 +167,12 @@ public partial class MainWindow : Window
         if (_trackedWallets.Any(wallet => wallet.Address.Equals(address, StringComparison.OrdinalIgnoreCase)))
         {
             NotificationPopup.ShowWarning("Essa carteira já está na sua lista.");
+            return;
+        }
+
+        if (_ownWalletAddress.Equals(address, StringComparison.OrdinalIgnoreCase))
+        {
+            NotificationPopup.ShowWarning("Essa é a sua carteira própria. Ela já aparece separadamente.");
             return;
         }
 
@@ -206,6 +236,16 @@ public partial class MainWindow : Window
 
     private async void WalletRemoved(object? sender, string address)
     {
+        var confirmation = MessageBox.Show(
+            "Remover esta carteira da lista de acompanhamento?",
+            "Remover carteira",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Question);
+        if (confirmation != MessageBoxResult.Yes)
+        {
+            return;
+        }
+
         var wallet = _trackedWallets.FirstOrDefault(item =>
             item.Address.Equals(address, StringComparison.OrdinalIgnoreCase));
         if (wallet is null)
@@ -246,6 +286,7 @@ public partial class MainWindow : Window
         _isRefreshing = true;
         ConnectionStatus.Text = "Sincronizando dados públicos…";
         ConnectionDot.Fill = PendingBrush;
+        _walletsPage.SetDataStatus("Sincronizando dados…");
         var errors = new ConcurrentQueue<string>();
         try
         {
@@ -300,6 +341,7 @@ public partial class MainWindow : Window
             {
                 ConnectionStatus.Text = "Polymarket · atualizando a cada 15s";
                 ConnectionDot.Fill = ConnectedBrush;
+                _walletsPage.SetDataStatus($"Atualizado às {DateTime.Now:HH:mm}");
                 _lastConnectionError = "";
                 if (showSuccessNotification)
                 {
@@ -310,6 +352,7 @@ public partial class MainWindow : Window
             {
                 ConnectionStatus.Text = hasSuccessfulRequest ? "Conectado · dados parciais" : "Falha na conexão";
                 ConnectionDot.Fill = hasSuccessfulRequest ? PendingBrush : DisconnectedBrush;
+                _walletsPage.SetDataStatus(hasSuccessfulRequest ? "Dados parciais · verifique os avisos" : "Não foi possível carregar os dados");
                 var errorSummary = string.Join("  •  ", errors.Distinct());
                 if (!errorSummary.Equals(_lastConnectionError, StringComparison.Ordinal))
                 {
@@ -322,6 +365,7 @@ public partial class MainWindow : Window
         {
             ConnectionStatus.Text = "Erro ao atualizar dados";
             ConnectionDot.Fill = DisconnectedBrush;
+            _walletsPage.SetDataStatus("Erro ao carregar dados");
             NotificationPopup.ShowError($"Falha inesperada ao atualizar: {exception.Message}");
         }
         finally
@@ -428,6 +472,7 @@ public partial class MainWindow : Window
         {
             await _settingsService.SaveAsync(new UserSettings
             {
+                ThemePreference = _themePreference,
                 OwnWalletAddress = _ownWalletAddress,
                 FocusedWalletAddress = _focusedWalletAddress,
                 HasCompletedInitialSetup = true,

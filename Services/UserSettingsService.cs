@@ -34,6 +34,7 @@ public sealed class UserSettingsService
 
 public sealed class UserSettings
 {
+    public string ThemePreference { get; set; } = "System";
     public string OwnWalletAddress { get; set; } = "";
     public string FocusedWalletAddress { get; set; } = "";
     public bool HasCompletedInitialSetup { get; set; }
