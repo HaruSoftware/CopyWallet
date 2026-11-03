@@ -8,6 +8,7 @@
         Title="Wallet Copy — Polymarket"
         Width="1460" Height="940" MinWidth="1120" MinHeight="720"
         WindowStartupLocation="CenterScreen"
+        Icon="{DynamicResource AppIcon}"
         Background="{DynamicResource ThemeBackground}" Foreground="{DynamicResource ThemeText}" FontFamily="Arial"
         ui:ThemeManager.RequestedTheme="Default"
         ui:WindowHelper.UseModernWindowStyle="True"

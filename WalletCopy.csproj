@@ -8,6 +8,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <RootNamespace>WalletCopy</RootNamespace>
     <AssemblyName>WalletCopy</AssemblyName>
+    <ApplicationIcon>app-icon.ico</ApplicationIcon>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="FontAwesome.WPF" Version="4.7.0.9" />

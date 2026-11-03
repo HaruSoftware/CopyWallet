@@ -6,6 +6,10 @@ A interface usa [ModernWPF da Kinnara](https://github.com/Kinnara/ModernWpf), co
 
 A aba **Configurações** permite escolher o tema **Sistema**, **Claro** ou **Escuro**. A escolha é aplicada à interface e salva localmente em `%APPDATA%\WalletCopy\settings.json`.
 
+A aba **Trades copiados** funciona atualmente como uma simulação local. Cada trade da atividade pode ser marcado individualmente, uma carteira pode marcar todos os trades atuais e a opção **Novos** pode registrar automaticamente os trades futuros carregados para aquela carteira. Trades já registrados são bloqueados por uma chave local estável e o histórico, junto com as carteiras em cópia automática, é salvo em `%APPDATA%\WalletCopy\settings.json`. Nenhuma ordem é enviada nesta etapa.
+
+Ao marcar um trade individualmente, o aplicativo abre uma confirmação com os modos **Automático** (posição, preço e tamanho observados) e **Manual** (posição Up/Down, tamanho em shares e preço por share). Os dados escolhidos são registrados no histórico local para preparar a futura integração de execução.
+
 ## Requisitos
 
 - Windows

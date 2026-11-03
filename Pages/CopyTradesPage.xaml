@@ -1,29 +1,62 @@
 <UserControl x:Class="WalletCopy.Pages.CopyTradesPage"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:models="clr-namespace:WalletCopy.Models"
              Background="Transparent">
-    <Grid>
-        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" MaxWidth="520"
-                    Margin="36">
-            <Border Width="66" Height="66" Background="{DynamicResource ThemeControl}" CornerRadius="20"
-                    HorizontalAlignment="Center" Margin="0,0,0,22">
-                <TextBlock Text="⇄" FontSize="31" Foreground="{DynamicResource ThemeAccentBlue}"
-                           HorizontalAlignment="Center" VerticalAlignment="Center"/>
-            </Border>
-            <TextBlock Text="Área de trades copiados" FontSize="25" FontWeight="Bold"
-                       HorizontalAlignment="Center"/>
-            <TextBlock Text="Este espaço está reservado para a futura experiência de acompanhamento dos trades copiados."
-                       FontSize="12" Foreground="{DynamicResource ThemeSecondary}" TextWrapping="Wrap"
-                       TextAlignment="Center" HorizontalAlignment="Center" Margin="0,10,0,20"/>
-            <Border Background="{DynamicResource ThemeSuccessBackground}" BorderBrush="{DynamicResource ThemeBorderStrong}" BorderThickness="1"
-                    CornerRadius="16" Padding="12,8" HorizontalAlignment="Center">
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Margin="28,25,28,30">
+            <TextBlock Text="Trades copiados" FontSize="27" FontWeight="Bold"/>
+            <TextBlock Text="Registro local dos trades marcados para cópia. O envio de ordens ainda está desativado."
+                       Foreground="{DynamicResource ThemeSecondary}" FontSize="12" Margin="0,5,0,20"/>
+            <Border Background="{DynamicResource ThemeSuccessBackground}" BorderBrush="{DynamicResource ThemeBorderStrong}"
+                    BorderThickness="1" CornerRadius="12" Padding="12,9" HorizontalAlignment="Left">
                 <StackPanel Orientation="Horizontal">
                     <Ellipse Width="6" Height="6" Fill="{DynamicResource ThemeAccent}" Margin="0,0,8,0"/>
-                    <TextBlock Text="MODO DE LEITURA · ORDENS DESATIVADAS" FontSize="9"
+                    <TextBlock Text="SIMULAÇÃO LOCAL · NENHUMA ORDEM SERÁ ENVIADA" FontSize="9"
                                FontWeight="Bold" Foreground="{DynamicResource ThemeAccent}"/>
                 </StackPanel>
             </Border>
+            <Border Background="{DynamicResource ThemePanel}" BorderBrush="{DynamicResource ThemeBorder}"
+                    BorderThickness="1" CornerRadius="14" Padding="10" Margin="0,18,0,0">
+                <Grid>
+                    <ItemsControl x:Name="CopiedTradesList">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate DataType="{x:Type models:CopyTradeRecord}">
+                                <Border Background="{DynamicResource ThemePanelRaised}" CornerRadius="10"
+                                        Padding="14,11" Margin="0,0,0,8">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel>
+                                            <TextBlock Text="{Binding MarketTitle}" FontSize="13"
+                                                       FontWeight="SemiBold" TextWrapping="Wrap"/>
+                                            <TextBlock Text="{Binding TradeLabel}" FontSize="11"
+                                                       Foreground="{DynamicResource ThemeAccent}" Margin="0,5,0,0"/>
+                                            <TextBlock Text="{Binding CopyDetailsLabel}" FontSize="10"
+                                                       Foreground="{DynamicResource ThemeMuted}" Margin="0,4,0,0"/>
+                                            <TextBlock Text="{Binding WalletLabel}" FontSize="10"
+                                                       Foreground="{DynamicResource ThemeMuted}" Margin="0,3,0,0"/>
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="1" HorizontalAlignment="Right"
+                                                    VerticalAlignment="Center">
+                                            <TextBlock Text="{Binding AmountLabel}" FontSize="14"
+                                                       FontWeight="SemiBold" HorizontalAlignment="Right"/>
+                                            <TextBlock Text="{Binding CopiedAtLabel}" FontSize="10"
+                                                       Foreground="{DynamicResource ThemeMuted}"
+                                                       HorizontalAlignment="Right" Margin="0,4,0,0"/>
+                                        </StackPanel>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    <TextBlock x:Name="EmptyState" Text="Nenhum trade foi marcado para cópia ainda."
+                               Foreground="{DynamicResource ThemeSecondary}" FontSize="13"
+                               HorizontalAlignment="Center" Margin="20"/>
+                </Grid>
+            </Border>
         </StackPanel>
-    </Grid>
+    </ScrollViewer>
 </UserControl>
-

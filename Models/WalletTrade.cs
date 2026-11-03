@@ -22,6 +22,8 @@ public sealed class WalletTrade
     public decimal TakerFeeRate { get; init; }
     public decimal FeeExponent { get; init; } = 1m;
     public DateTime Timestamp { get; init; }
+    public bool IsCopied { get; set; }
+    public string CopyActionLabel => IsCopied ? "Copiado" : "Copiar trade";
     public string PriceLabel => $"{Price:P0}";
     public string SideLabel => Side.Equals("BUY", StringComparison.OrdinalIgnoreCase) ? "Buy" : "Sell";
     public string OutcomePriceLabel => $"{Outcome} {Price * 100m:N0}¢";

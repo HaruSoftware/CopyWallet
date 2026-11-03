@@ -51,6 +51,10 @@
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
                         <TextBox x:Name="OwnWalletInput" Height="42"
+                                 Padding="14,0"
+                                 FontSize="13"
+                                 HorizontalContentAlignment="Left"
+                                 VerticalContentAlignment="Center"
                                  ui:ControlHelper.PlaceholderText="Seu endereço público para consultar posições"
                                  KeyDown="OwnWalletInput_KeyDown"/>
                         <Button Grid.Column="2" Content="Salvar minha carteira" Background="{DynamicResource ThemeControl}"
@@ -78,12 +82,15 @@
                     </Grid>
                     <ItemsControl x:Name="TrackedWalletList">
                         <ItemsControl.ItemsPanel>
-                            <ItemsPanelTemplate><WrapPanel/></ItemsPanelTemplate>
+                            <ItemsPanelTemplate>
+                                <StackPanel/>
+                            </ItemsPanelTemplate>
                         </ItemsControl.ItemsPanel>
                         <ItemsControl.ItemTemplate>
                             <DataTemplate DataType="{x:Type models:TrackedWallet}">
                                 <Border Background="{DynamicResource ThemePanelRaised}" BorderBrush="{DynamicResource ThemeBorderStrong}" BorderThickness="1"
-                                        CornerRadius="10" Padding="10,8" Margin="0,0,8,8" MinWidth="300" MaxWidth="520"
+                                        CornerRadius="10" Padding="10,8" Margin="0,0,0,8"
+                                        HorizontalAlignment="Stretch"
                                         Tag="{Binding Address}" MouseLeftButtonUp="TrackedWalletCard_MouseLeftButtonUp">
                                     <Grid MinHeight="38" MouseEnter="TrackedWalletCard_MouseEnter"
                                           MouseLeave="TrackedWalletCard_MouseLeave">
@@ -96,13 +103,24 @@
                                         <Ellipse Width="7" Height="7" Fill="{DynamicResource ThemeAccent}" VerticalAlignment="Center"/>
                                         <TextBlock Grid.Column="2" Text="{Binding Address}" FontSize="10"
                                                    TextWrapping="Wrap" VerticalAlignment="Center"/>
-                                        <Button x:Name="RemoveWalletButton" Grid.Column="3" Content="×" Tag="{Binding Address}"
-                                                Width="28" Height="28" Padding="0"
-                                                HorizontalContentAlignment="Center" VerticalContentAlignment="Center"
-                                                HorizontalAlignment="Center" VerticalAlignment="Center"
-                                                Background="Transparent" Foreground="{DynamicResource ThemeSecondary}"
-                                                FontSize="15" ToolTip="{Binding Address}" Click="RemoveWallet_Click"
-                                                Opacity="0" IsHitTestVisible="False"/>
+                                        <StackPanel Grid.Column="3" Orientation="Horizontal" VerticalAlignment="Center">
+                                            <CheckBox Content="Novos" Tag="{Binding Address}"
+                                                      IsChecked="{Binding IsAutoCopyEnabled}"
+                                                      FontSize="9" Foreground="{DynamicResource ThemeSecondary}"
+                                                      VerticalAlignment="Center" Margin="0,0,6,0"
+                                                      Checked="AutoCopy_Checked" Unchecked="AutoCopy_Unchecked"/>
+                                            <Button Content="Copiar tudo" Tag="{Binding Address}"
+                                                    Padding="7,4" FontSize="9"
+                                                    Background="{DynamicResource ThemeControl}"
+                                                    Click="CopyAllTrades_Click"/>
+                                            <Button x:Name="RemoveWalletButton" Content="×" Tag="{Binding Address}"
+                                                    Width="28" Height="28" Padding="0" Margin="4,0,0,0"
+                                                    HorizontalContentAlignment="Center" VerticalContentAlignment="Center"
+                                                    HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                    Background="Transparent" Foreground="{DynamicResource ThemeSecondary}"
+                                                    FontSize="15" ToolTip="{Binding Address}" Click="RemoveWallet_Click"
+                                                    Opacity="0" IsHitTestVisible="False"/>
+                                        </StackPanel>
                                     </Grid>
                                 </Border>
                             </DataTemplate>
@@ -253,6 +271,20 @@
                                                                            Foreground="{DynamicResource ThemeMuted}"/>
                                                                 <TextBlock Text="  ↗" FontSize="12" Foreground="{DynamicResource ThemeMuted}"/>
                                                             </StackPanel>
+                                                            <Button Content="{Binding CopyActionLabel}" DataContext="{Binding}"
+                                                                    Click="CopyTrade_Click" Padding="8,4" FontSize="9"
+                                                                    HorizontalAlignment="Right" Margin="0,5,0,0">
+                                                                <Button.Style>
+                                                                    <Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+                                                                        <Style.Triggers>
+                                                                            <DataTrigger Binding="{Binding IsCopied}" Value="True">
+                                                                                <Setter Property="IsEnabled" Value="False"/>
+                                                                                <Setter Property="Foreground" Value="{DynamicResource ThemeAccent}"/>
+                                                                            </DataTrigger>
+                                                                        </Style.Triggers>
+                                                                    </Style>
+                                                                </Button.Style>
+                                                            </Button>
                                                         </StackPanel>
                                                     </Grid>
                                                 </Border>

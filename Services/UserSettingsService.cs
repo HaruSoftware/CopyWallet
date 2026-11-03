@@ -1,5 +1,6 @@
 using System.IO;
 using System.Text.Json;
+using WalletCopy.Models;
 
 namespace WalletCopy.Services;
 
@@ -39,4 +40,6 @@ public sealed class UserSettings
     public string FocusedWalletAddress { get; set; } = "";
     public bool HasCompletedInitialSetup { get; set; }
     public List<string> TrackedWalletAddresses { get; set; } = [];
+    public List<string> AutoCopyWalletAddresses { get; set; } = [];
+    public List<CopyTradeRecord> CopiedTrades { get; set; } = [];
 }

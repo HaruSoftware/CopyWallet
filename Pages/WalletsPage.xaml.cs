@@ -12,6 +12,9 @@ public partial class WalletsPage : UserControl
     public event EventHandler<string>? OwnWalletRequested;
     public event EventHandler<string>? WalletSelected;
     public event EventHandler<string>? WalletRemoved;
+    public event EventHandler<WalletTrade>? CopyTradeRequested;
+    public event EventHandler<string>? CopyAllTradesRequested;
+    public event EventHandler<(string Address, bool Enabled)>? AutoCopyChanged;
     private IReadOnlyList<WalletPosition> _allPositions = [];
     private IReadOnlyList<WalletTrade> _allTrades = [];
     private string _focusedAddress = "";
@@ -173,6 +176,57 @@ public partial class WalletsPage : UserControl
         OwnWalletRequested?.Invoke(this, OwnWalletInput.Text.Trim());
     }
 
+    public void SetCopyState(ISet<string> copiedTradeKeys)
+    {
+        foreach (var trade in _allTrades)
+        {
+            trade.IsCopied = copiedTradeKeys.Contains(GetTradeKey(trade));
+        }
+        ActivityList.Items.Refresh();
+    }
+
+    public static string GetTradeKey(WalletTrade trade) =>
+        string.Join("|", trade.WalletAddress.ToLowerInvariant(), trade.MarketSlug,
+            trade.MarketTitle, trade.Outcome, trade.Side.ToUpperInvariant(),
+            trade.Timestamp.ToUniversalTime().Ticks, trade.Price, trade.Size);
+
+    private void CopyTrade_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is Button { DataContext: WalletTrade trade })
+        {
+            CopyTradeRequested?.Invoke(this, trade);
+        }
+    }
+
+    private void CopyAllTrades_Click(object sender, RoutedEventArgs e)
+    {
+        e.Handled = true;
+        if (sender is Button { Tag: string address })
+        {
+            CopyAllTradesRequested?.Invoke(this, address);
+        }
+    }
+
+    private void AutoCopy_Checked(object sender, RoutedEventArgs e)
+    {
+        e.Handled = true;
+        SetAutoCopyState(sender, enabled: true);
+    }
+
+    private void AutoCopy_Unchecked(object sender, RoutedEventArgs e)
+    {
+        e.Handled = true;
+        SetAutoCopyState(sender, enabled: false);
+    }
+
+    private void SetAutoCopyState(object sender, bool enabled)
+    {
+        if (sender is CheckBox { Tag: string address })
+        {
+            AutoCopyChanged?.Invoke(this, (address, enabled));
+        }
+    }
+
     private void TrackedWalletCard_MouseEnter(object sender, MouseEventArgs e)
     {
         if (sender is Grid grid && grid.FindName("RemoveWalletButton") is Button removeButton)
@@ -209,6 +263,7 @@ public partial class WalletsPage : UserControl
 
     private void RemoveWallet_Click(object sender, RoutedEventArgs e)
     {
+        e.Handled = true;
         if (sender is Button { Tag: string address })
         {
             WalletRemoved?.Invoke(this, address);

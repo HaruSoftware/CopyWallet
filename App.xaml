@@ -31,6 +31,28 @@
             <SolidColorBrush x:Key="ThemeError" Color="#F28C8C"/>
             <SolidColorBrush x:Key="ThemeAccentText" Color="#092015"/>
 
+            <DrawingImage x:Key="AppIcon">
+                <DrawingImage.Drawing>
+                    <DrawingGroup>
+                        <GeometryDrawing Brush="#64E2A2">
+                            <GeometryDrawing.Geometry>
+                                <RectangleGeometry Rect="3,7,26,18" RadiusX="5" RadiusY="5"/>
+                            </GeometryDrawing.Geometry>
+                        </GeometryDrawing>
+                        <GeometryDrawing Brush="#0B0D12">
+                            <GeometryDrawing.Geometry>
+                                <EllipseGeometry Center="23,16" RadiusX="2.5" RadiusY="2.5"/>
+                            </GeometryDrawing.Geometry>
+                        </GeometryDrawing>
+                        <GeometryDrawing Brush="#8497FF">
+                            <GeometryDrawing.Geometry>
+                                <PathGeometry Figures="M16,2 L20,2 L20,6 L24,6 L24,10 L20,10 L20,14 L16,14 L16,10 L12,10 L12,6 L16,6 Z"/>
+                            </GeometryDrawing.Geometry>
+                        </GeometryDrawing>
+                    </DrawingGroup>
+                </DrawingImage.Drawing>
+            </DrawingImage>
+
             <Style TargetType="TextBlock">
                 <Setter Property="Foreground" Value="{DynamicResource ThemeText}"/>
                 <Setter Property="FontFamily" Value="Arial"/>

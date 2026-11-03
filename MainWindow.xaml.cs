@@ -31,6 +31,10 @@ public partial class MainWindow : Window
     private readonly CopyTradesPage _copyTradesPage = new();
     private readonly SettingsPage _settingsPage = new();
     private readonly DispatcherTimer _refreshTimer = new() { Interval = TimeSpan.FromSeconds(15) };
+    private readonly ObservableCollection<CopyTradeRecord> _copiedTrades = [];
+    private readonly HashSet<string> _copiedTradeKeys = new(StringComparer.Ordinal);
+    private readonly HashSet<string> _autoCopyWalletAddresses = new(StringComparer.OrdinalIgnoreCase);
+    private IReadOnlyList<WalletTrade> _recentTrades = [];
     private string _ownWalletAddress = "";
     private string _focusedWalletAddress = "";
     private string _lastConnectionError = "";
@@ -42,10 +46,15 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
         _dashboardPage.WalletFilterChanged += DashboardWalletFilterChanged;
+        _dashboardPage.CopyTradeRequested += CopyTradeRequested;
         _walletsPage.AddWalletRequested += AddWalletRequested;
         _walletsPage.OwnWalletRequested += OwnWalletRequested;
         _walletsPage.WalletSelected += WalletSelected;
         _walletsPage.WalletRemoved += WalletRemoved;
+        _walletsPage.CopyTradeRequested += CopyTradeRequested;
+        _walletsPage.CopyAllTradesRequested += CopyAllTradesRequested;
+        _walletsPage.AutoCopyChanged += AutoCopyChanged;
+        _copyTradesPage.SetRecords(_copiedTrades);
         _settingsPage.ThemeChanged += SettingsPageThemeChanged;
         _refreshTimer.Tick += async (_, _) => await RefreshDataAsync();
         Loaded += MainWindow_Loaded;
@@ -74,7 +83,26 @@ public partial class MainWindow : Window
                          .Where(IsValidWalletAddress)
                          .Distinct(StringComparer.OrdinalIgnoreCase))
             {
-                _trackedWallets.Add(new TrackedWallet { Address = address });
+                _trackedWallets.Add(new TrackedWallet
+                {
+                    Address = address,
+                    IsAutoCopyEnabled = (settings.AutoCopyWalletAddresses ?? [])
+                        .Any(item => item.Equals(address, StringComparison.OrdinalIgnoreCase))
+                });
+            }
+            foreach (var address in settings.AutoCopyWalletAddresses ?? [])
+            {
+                if (IsValidWalletAddress(address))
+                {
+                    _autoCopyWalletAddresses.Add(address);
+                }
+            }
+            foreach (var record in settings.CopiedTrades ?? [])
+            {
+                if (!string.IsNullOrWhiteSpace(record.Key) && _copiedTradeKeys.Add(record.Key))
+                {
+                    _copiedTrades.Add(record);
+                }
             }
 
             _focusedWalletAddress = IsValidWalletAddress(settings.FocusedWalletAddress)
@@ -270,6 +298,84 @@ public partial class MainWindow : Window
         await RefreshDataAsync();
     }
 
+    private async void CopyTradeRequested(object? sender, WalletTrade trade)
+    {
+        var dialog = new CopyTradeDialog(trade) { Owner = this };
+        if (dialog.ShowDialog() != true || dialog.Draft is null)
+        {
+            return;
+        }
+
+        if (RegisterCopiedTrade(trade, dialog.Draft))
+        {
+            await SaveSettingsAsync();
+            NotificationPopup.ShowSuccess("Trade marcado para cópia. Nenhuma ordem foi enviada.");
+        }
+        else
+        {
+            NotificationPopup.ShowInformation("Esse trade já foi marcado para cópia.");
+        }
+    }
+
+    private async void CopyAllTradesRequested(object? sender, string address)
+    {
+        var trades = _recentTrades.Where(trade =>
+            trade.WalletAddress.Equals(address, StringComparison.OrdinalIgnoreCase)).ToArray();
+        var copiedCount = 0;
+        foreach (var trade in trades)
+        {
+            if (RegisterCopiedTrade(trade))
+            {
+                copiedCount++;
+            }
+        }
+        await SaveSettingsAsync();
+        NotificationPopup.ShowInformation(copiedCount == 0
+            ? "Nenhum trade novo para copiar nesta carteira."
+            : $"{copiedCount} trade(s) marcado(s) para cópia. Nenhuma ordem foi enviada.");
+    }
+
+    private async void AutoCopyChanged(object? sender, (string Address, bool Enabled) change)
+    {
+        if (change.Enabled)
+        {
+            _autoCopyWalletAddresses.Add(change.Address);
+        }
+        else
+        {
+            _autoCopyWalletAddresses.Remove(change.Address);
+        }
+
+        var wallet = _trackedWallets.FirstOrDefault(item =>
+            item.Address.Equals(change.Address, StringComparison.OrdinalIgnoreCase));
+        if (wallet is not null)
+        {
+            wallet.IsAutoCopyEnabled = change.Enabled;
+        }
+
+        await SaveSettingsAsync();
+        NotificationPopup.ShowInformation(change.Enabled
+            ? "Cópia automática ativada para esta carteira."
+            : "Cópia automática desativada para esta carteira.");
+    }
+
+    private bool RegisterCopiedTrade(WalletTrade trade, CopyTradeDraft? draft = null)
+    {
+        var key = WalletsPage.GetTradeKey(trade);
+        if (!_copiedTradeKeys.Add(key))
+        {
+            trade.IsCopied = true;
+            return false;
+        }
+
+        trade.IsCopied = true;
+        _copiedTrades.Insert(0, CopyTradeRecord.FromTrade(trade, key, draft));
+        _walletsPage.SetCopyState(_copiedTradeKeys);
+        _dashboardPage.SetCopyState(_copiedTradeKeys);
+        _copyTradesPage.SetRecords(_copiedTrades);
+        return true;
+    }
+
     private async void Refresh_Click(object sender, RoutedEventArgs e)
     {
         await RefreshDataAsync(showSuccessNotification: true);
@@ -317,9 +423,29 @@ public partial class MainWindow : Window
                 .ToArray();
             var positions = positionsTask.Result;
             _walletsPage.SetPositions(positions, _focusedWalletAddress);
+            foreach (var trade in recentTrades)
+            {
+                trade.IsCopied = _copiedTradeKeys.Contains(WalletsPage.GetTradeKey(trade));
+            }
+            _recentTrades = recentTrades;
+            var autoCopiedTrades = false;
+            foreach (var wallet in _trackedWallets.Where(wallet => _autoCopyWalletAddresses.Contains(wallet.Address)))
+            {
+                foreach (var trade in recentTrades.Where(trade =>
+                             trade.WalletAddress.Equals(wallet.Address, StringComparison.OrdinalIgnoreCase)))
+                {
+                    autoCopiedTrades |= RegisterCopiedTrade(trade);
+                }
+            }
             _walletsPage.SetActivity(recentTrades, _focusedWalletAddress);
             _dashboardPage.SetWallets(_trackedWallets, _ownWalletAddress, _focusedWalletAddress);
             _dashboardPage.UpdateData(_trackedWallets.Count, recentTrades, DateTime.Now);
+            _dashboardPage.SetCopyState(_copiedTradeKeys);
+            _copyTradesPage.SetRecords(_copiedTrades);
+            if (autoCopiedTrades)
+            {
+                await SaveSettingsAsync();
+            }
             _dashboardPage.SetWalletPerformance(
                 performanceTask.Result,
                 pusdBalanceTask.Result,
@@ -476,7 +602,9 @@ public partial class MainWindow : Window
                 OwnWalletAddress = _ownWalletAddress,
                 FocusedWalletAddress = _focusedWalletAddress,
                 HasCompletedInitialSetup = true,
-                TrackedWalletAddresses = _trackedWallets.Select(wallet => wallet.Address).ToList()
+                TrackedWalletAddresses = _trackedWallets.Select(wallet => wallet.Address).ToList(),
+                AutoCopyWalletAddresses = _autoCopyWalletAddresses.ToList(),
+                CopiedTrades = _copiedTrades.ToList()
             });
             return true;
         }

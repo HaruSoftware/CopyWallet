@@ -12,6 +12,7 @@ public partial class DashboardPage : UserControl
     private bool _isUpdatingWallets;
 
     public event EventHandler<string>? WalletFilterChanged;
+    public event EventHandler<WalletTrade>? CopyTradeRequested;
 
     public DashboardPage()
     {
@@ -128,5 +129,22 @@ public partial class DashboardPage : UserControl
                 System.Windows.Media.Color.FromRgb(66, 215, 125))
             : new System.Windows.Media.SolidColorBrush(
                 System.Windows.Media.Color.FromRgb(255, 113, 106));
+    }
+
+    public void SetCopyState(ISet<string> copiedTradeKeys)
+    {
+        foreach (var trade in _allTrades)
+        {
+            trade.IsCopied = copiedTradeKeys.Contains(WalletsPage.GetTradeKey(trade));
+        }
+        TradeList.Items.Refresh();
+    }
+
+    private void CopyTrade_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is Button { DataContext: WalletTrade trade })
+        {
+            CopyTradeRequested?.Invoke(this, trade);
+        }
     }
 }
