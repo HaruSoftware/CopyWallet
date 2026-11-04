@@ -43,8 +43,22 @@ public partial class CopyTradeDialog : Window
         UpdateExecutionWarning();
     }
 
+    private void TestSplit_Changed(object sender, RoutedEventArgs e)
+    {
+        if (!IsInitialized)
+        {
+            return;
+        }
+
+        var isSplit = TestSplitCheckBox.IsChecked == true;
+        TestSplitInfoText.Visibility = isSplit ? Visibility.Visible : Visibility.Collapsed;
+        UpdateExecutionWarning();
+    }
+
     private void UpdateExecutionWarning()
     {
+        var isSplit = TestSplitCheckBox.IsChecked == true;
+
         if (RealExecutionMode.IsChecked == true)
         {
             if (!_hasLiveCredentials)
@@ -55,14 +69,18 @@ public partial class CopyTradeDialog : Window
             }
             else
             {
-                ExecutionWarningText.Text = "Execução Real: Esta ordem será assinada com sua chave e enviada ao livro de ofertas da Polymarket (Polygon 137). Certifique-se de possuir saldo USDC.e ou pUSD.";
+                ExecutionWarningText.Text = isSplit
+                    ? "🛡️ TEST SPLIT REAL: Serão enviadas ordens para ambos os lados (Up + Down) na Polymarket CLOB. Como 1 Up + 1 Down pagam $1.00 garantido na liquidação, seu risco de perda é zero."
+                    : "Execução Real: Esta ordem será assinada com sua chave e enviada ao livro de ofertas da Polymarket (Polygon 137). Certifique-se de possuir saldo USDC.e ou pUSD.";
                 ValidationText.Text = "";
                 ConfirmButton.IsEnabled = true;
             }
         }
         else
         {
-            ExecutionWarningText.Text = "Modo Simulação: A ordem será registrada localmente no terminal Paper Trading, sem envolver fundos reais.";
+            ExecutionWarningText.Text = isSplit
+                ? "Simulação Test Split: Ordem simulada em ambos os lados na conta virtual de Paper Trading."
+                : "Modo Simulação: A ordem será registrada localmente no terminal Paper Trading, sem envolver fundos reais.";
             ValidationText.Text = "";
             ConfirmButton.IsEnabled = true;
         }
@@ -83,6 +101,7 @@ public partial class CopyTradeDialog : Window
     private void Confirm_Click(object sender, RoutedEventArgs e)
     {
         var isReal = RealExecutionMode.IsChecked == true;
+        var isSplit = TestSplitCheckBox.IsChecked == true;
 
         if (isReal && !_hasLiveCredentials)
         {
@@ -103,7 +122,8 @@ public partial class CopyTradeDialog : Window
                 ConditionId = _trade.ConditionId,
                 Size = _trade.Size,
                 Price = _trade.Price,
-                MaxSlippagePercent = 1.5m
+                MaxSlippagePercent = 1.5m,
+                IsSplit = isSplit
             };
             DialogResult = true;
             return;
@@ -141,7 +161,8 @@ public partial class CopyTradeDialog : Window
             ConditionId = _trade.ConditionId,
             Size = size,
             Price = price,
-            MaxSlippagePercent = slippage
+            MaxSlippagePercent = slippage,
+            IsSplit = isSplit
         };
         DialogResult = true;
     }

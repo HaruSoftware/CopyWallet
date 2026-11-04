@@ -11,6 +11,7 @@ public sealed class CopyTradeRecord
     public string CopyMode { get; set; } = "Automatico";
     public string ExecutionTarget { get; set; } = "Real";
     public bool IsLiveOrder { get; set; }
+    public bool IsSplit { get; set; }
     public string ClobOrderId { get; set; } = "";
     public string ExecutionStatus { get; set; } = "Registrado";
     public string? ErrorMessage { get; set; }
@@ -29,13 +30,16 @@ public sealed class CopyTradeRecord
         : $"{WalletAddress[..Math.Min(6, WalletAddress.Length)]}…{WalletAddress[^Math.Min(4, WalletAddress.Length)..]}";
 
     public string TradeLabel => $"{Side} · {Outcome}";
-    public string CopyDetailsLabel => $"{CopyMode} · {Position} · {OrderType} · {RequestedSize:N2} shares @ {RequestedPrice:P0}"
+    public string CopyDetailsLabel => (IsSplit ? "TEST SPLIT · " : "")
+                                      + $"{CopyMode} · {Position} · {OrderType} · {RequestedSize:N2} shares @ {RequestedPrice:P0}"
                                       + (MaxSlippagePercent > 0m ? $" · slippage {MaxSlippagePercent:N2}%" : "")
                                       + (!string.IsNullOrWhiteSpace(ClobOrderId) ? $" · ID: {ClobOrderId[..Math.Min(10, ClobOrderId.Length)]}…" : "");
 
-    public string ExecutionBadgeLabel => IsLiveOrder
-        ? (ExecutionStatus == "Filled" || ExecutionStatus == "Matched" ? "REAL · EXECUTADA" : $"REAL · {ExecutionStatus.ToUpperInvariant()}")
-        : "SIMULAÇÃO LOCAL";
+    public string ExecutionBadgeLabel => IsSplit
+        ? (IsLiveOrder ? "REAL · TEST SPLIT" : "SIMULADO · TEST SPLIT")
+        : (IsLiveOrder
+            ? (ExecutionStatus is "Filled" or "Matched" ? "REAL · EXECUTADA" : $"REAL · {ExecutionStatus.ToUpperInvariant()}")
+            : "SIMULAÇÃO LOCAL");
 
     public string CopiedAtLabel => CopiedAt.ToLocalTime().ToString("dd/MM HH:mm");
 
@@ -48,10 +52,11 @@ public sealed class CopyTradeRecord
         Outcome = trade.OutcomePriceLabel,
         AmountLabel = draft is null
             ? trade.AmountLabel
-            : $"${(draft.Size * draft.Price):N2}",
+            : $"${(draft.Size * draft.Price * (draft.IsSplit ? 2m : 1m)):N2}",
         CopyMode = draft?.Mode ?? "Automatico",
         ExecutionTarget = draft?.ExecutionTarget ?? "Real",
         IsLiveOrder = (draft?.ExecutionTarget ?? "Real") == "Real",
+        IsSplit = draft?.IsSplit ?? false,
         ExecutionStatus = (draft?.ExecutionTarget ?? "Real") == "Real" ? "Enviando…" : "Simulado",
         Position = draft?.Position ?? trade.Outcome,
         RequestedSize = draft?.Size ?? trade.Size,

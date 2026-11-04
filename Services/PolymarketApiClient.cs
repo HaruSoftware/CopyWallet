@@ -293,36 +293,98 @@ public sealed class PolymarketApiClient
             }
 
             const string featuredUri = "https://gamma-api.polymarket.com/events?active=true&closed=false&limit=100&order=volume24hr&ascending=false";
-            const string quickUri = "https://gamma-api.polymarket.com/events?active=true&closed=false&tag_slug=crypto&limit=100&order=endDate&ascending=true";
+            var now = DateTime.UtcNow;
+            const string cryptoUri = "https://gamma-api.polymarket.com/events?active=true&closed=false&tag_slug=crypto&limit=100&order=endDate&ascending=false";
             var featuredTask = GetJsonAsync(featuredUri, cancellationToken);
-            var quickTask = GetJsonAsync(quickUri, cancellationToken);
-            await Task.WhenAll(featuredTask, quickTask);
+            var cryptoTask = GetJsonAsync(cryptoUri, cancellationToken);
+            var fastCryptoTask = FetchDeterministicFastCryptoMarketsAsync(now, cancellationToken);
+            await Task.WhenAll(featuredTask, cryptoTask, fastCryptoTask);
             using var featuredDocument = await featuredTask;
-            using var quickDocument = await quickTask;
+            using var quickDocument = await cryptoTask;
+            var fastCryptoMarkets = await fastCryptoTask;
             if (featuredDocument.RootElement.ValueKind != JsonValueKind.Array
                 || quickDocument.RootElement.ValueKind != JsonValueKind.Array)
             {
                 throw new InvalidDataException("A resposta de mercados da Polymarket veio em um formato inesperado.");
             }
 
-            var markets = featuredDocument.RootElement.EnumerateArray()
-                .Concat(quickDocument.RootElement.EnumerateArray())
-                .SelectMany(ReadEventMarkets)
-                .Where(market => market.IsActive
-                                 && !market.IsClosed
-                                 && !string.IsNullOrWhiteSpace(market.ConditionId))
-                .GroupBy(market => market.ConditionId, StringComparer.OrdinalIgnoreCase)
-                .Select(group => group.First())
-                .OrderByDescending(market => !string.IsNullOrEmpty(market.TimeframeLabel))
-                .ThenByDescending(market => market.Volume24h)
+            var rawMarkets = new List<MarketCard>();
+            if (featuredDocument.RootElement.ValueKind == JsonValueKind.Array)
+            {
+                rawMarkets.AddRange(featuredDocument.RootElement.EnumerateArray().SelectMany(ReadEventMarkets));
+            }
+            if (quickDocument.RootElement.ValueKind == JsonValueKind.Array)
+            {
+                rawMarkets.AddRange(quickDocument.RootElement.EnumerateArray().SelectMany(ReadEventMarkets));
+            }
+            rawMarkets.AddRange(fastCryptoMarkets);
+
+            var validMarkets = rawMarkets
+                .Where(m => m.IsActive
+                            && !m.IsClosed
+                            && !string.IsNullOrWhiteSpace(m.ConditionId)
+                            && (!m.EndDate.HasValue || m.EndDate.Value > now.AddSeconds(-30)))
+                .GroupBy(m => m.ConditionId, StringComparer.OrdinalIgnoreCase)
+                .Select(g => g.First())
+                .ToList();
+
+            var currentFastMarkets = validMarkets
+                .Where(m => !string.IsNullOrEmpty(m.TimeframeLabel))
+                .GroupBy(m => $"{m.Asset}_{m.TimeframeLabel}", StringComparer.OrdinalIgnoreCase)
+                .Select(g => g.OrderBy(m => m.EndDate ?? DateTime.MaxValue).First())
+                .OrderBy(m => m.TimeframeLabel switch { "5m" => 1, "15m" => 2, "1h" => 3, "4h" => 4, _ => 5 })
+                .ThenBy(m => m.Asset)
+                .ToList();
+
+            var otherMarkets = validMarkets
+                .Where(m => string.IsNullOrEmpty(m.TimeframeLabel))
+                .OrderByDescending(m => m.Volume24h)
+                .Take(30)
+                .ToList();
+
+            var markets = currentFastMarkets.Concat(otherMarkets)
+
+
+
+
+
+
+
+
+
                 .ToArray();
             _marketCache = markets;
-            _marketCacheExpiresAt = DateTime.UtcNow + MarketCacheDuration;
+            _marketCacheExpiresAt = DateTime.UtcNow + TimeSpan.FromSeconds(25);
             return _marketCache;
         }
         finally
         {
             _marketCacheSemaphore.Release();
+        }
+    }
+
+    public async Task<List<MarketOutcome>> GetMarketOutcomesByConditionAsync(
+        string conditionId,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var uri = $"https://gamma-api.polymarket.com/markets?condition_id={Uri.EscapeDataString(conditionId)}";
+            using var document = await GetJsonAsync(uri, cancellationToken);
+            if (document.RootElement.ValueKind != JsonValueKind.Array)
+            {
+                return [];
+            }
+            var marketElement = document.RootElement.EnumerateArray().FirstOrDefault();
+            if (marketElement.ValueKind != JsonValueKind.Object)
+            {
+                return [];
+            }
+            return ReadMarketOutcomes(marketElement);
+        }
+        catch
+        {
+            return [];
         }
     }
 
@@ -500,7 +562,8 @@ public sealed class PolymarketApiClient
 
         var conditionId = ReadString(market, "conditionId", "condition_id") ?? "";
         var title = ReadString(market, "question", "title") ?? eventTitle;
-        var timeframe = GetTimeframeLabel(slug);
+        var timeframe = GetTimeframeLabel(slug, title);
+        var asset = GetAssetFromSlugOrTitle(slug, title);
         return new MarketCard
         {
             MarketId = conditionId,
@@ -508,6 +571,7 @@ public sealed class PolymarketApiClient
             EventTitle = eventTitle,
             Slug = slug,
             Title = title,
+            Asset = asset,
             ImageUrl = ReadString(market, "image", "icon") ?? eventImageUrl,
             Volume24h = volume,
             VolumeLabel = FormatVolume(volume),
@@ -733,7 +797,76 @@ public sealed class PolymarketApiClient
         }
     }
 
-    private static string GetTimeframeLabel(string slug)
+    private static string GetTimeframeLabel(string slug, string title)
+    {
+        var s = (slug + " " + title).ToLowerInvariant();
+        if (s.Contains("-updown-5m-") || s.Contains("-5m-") || s.Contains(" 5m") || s.Contains(" 5 min")) return "5m";
+        if (s.Contains("-updown-15m-") || s.Contains("-15m-") || s.Contains(" 15m") || s.Contains(" 15 min")) return "15m";
+        if (s.Contains("-updown-1h-") || s.Contains("-updown-1hr-") || s.Contains("-1h-") || s.Contains("-1hr-") || s.Contains(" 1h") || s.Contains(" 1 hour") || s.Contains(" 1 hr")) return "1h";
+        if (s.Contains("-updown-4h-") || s.Contains("-updown-4hr-") || s.Contains("-4h-") || s.Contains("-4hr-") || s.Contains(" 4h") || s.Contains(" 4 hour") || s.Contains(" 4 hr")) return "4h";
+        return "";
+    }
+
+    private static string GetAssetFromSlugOrTitle(string slug, string title)
+    {
+        var s = (slug + " " + title).ToLowerInvariant();
+        if (s.Contains("btc") || s.Contains("bitcoin")) return "BTC";
+        if (s.Contains("eth") || s.Contains("ethereum")) return "ETH";
+        if (s.Contains("sol") || s.Contains("solana")) return "SOL";
+        if (s.Contains("xrp") || s.Contains("ripple")) return "XRP";
+        if (s.Contains("doge") || s.Contains("dogecoin")) return "DOGE";
+        if (s.Contains("bnb") || s.Contains("binance")) return "BNB";
+        if (s.Contains("hype") || s.Contains("hyperliquid")) return "HYPE";
+        return "CRYPTO";
+    }
+
+    private async Task<List<MarketCard>> FetchDeterministicFastCryptoMarketsAsync(
+        DateTime utcNow,
+        CancellationToken cancellationToken)
+    {
+        var assets = new[] { "btc", "eth", "sol", "xrp", "doge" };
+        var intervals = new[] { ("5m", 5), ("15m", 15), ("1h", 60), ("4h", 240) };
+        var tasks = new List<Task<MarketCard?>>();
+
+        foreach (var asset in assets)
+        {
+            foreach (var (label, minutes) in intervals)
+            {
+                var totalMinutes = (int)(utcNow.TimeOfDay.TotalMinutes);
+                var roundedMinutes = (totalMinutes / minutes) * minutes;
+                var windowStart = utcNow.Date.AddMinutes(roundedMinutes);
+                var ts = new DateTimeOffset(windowStart).ToUnixTimeSeconds();
+                var slug = $"{asset}-updown-{label}-{ts}";
+
+                tasks.Add(FetchMarketBySlugAsync(slug, cancellationToken));
+            }
+        }
+
+        var results = await Task.WhenAll(tasks);
+        return results.Where(m => m is not null).Select(m => m!).ToList();
+    }
+
+    private async Task<MarketCard?> FetchMarketBySlugAsync(string slug, CancellationToken cancellationToken)
+    {
+        try
+        {
+            using var doc = await GetJsonAsync(
+                $"https://gamma-api.polymarket.com/events/slug/{Uri.EscapeDataString(slug)}",
+                cancellationToken);
+            if (doc.RootElement.ValueKind != JsonValueKind.Object)
+            {
+                return null;
+            }
+
+            return ReadEventMarkets(doc.RootElement).FirstOrDefault();
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    private static string GetTimeframeLabelLegacy(string slug)
     {
         foreach (var timeframe in new[] { "5m", "15m", "1h", "4h" })
         {

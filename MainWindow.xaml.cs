@@ -382,6 +382,84 @@ public partial class MainWindow : Window
 
             NotificationPopup.ShowInformation("Enviando ordem real para a Polymarket CLOB…");
 
+            if (draft.IsSplit)
+            {
+                NotificationPopup.ShowInformation("Executando TEST SPLIT real (compra simultânea de ambos os lados)…");
+                try
+                {
+                    var outcomes = await _apiClient.GetMarketOutcomesByConditionAsync(draft.ConditionId);
+                    if (outcomes.Count < 2 || string.IsNullOrWhiteSpace(outcomes[0].TokenId) || string.IsNullOrWhiteSpace(outcomes[1].TokenId))
+                    {
+                        record.ExecutionStatus = "Falhou";
+                        record.ErrorMessage = "Não foi possível obter os tokens dos dois lados do mercado para o split.";
+                        await SaveSettingsAsync();
+                        _copyTradesPage.SetRecords(_copiedTrades);
+                        NotificationPopup.ShowError("Mercado não possui os 2 tokens necessários para Test Split.");
+                        return;
+                    }
+
+                    var order1Req = new ClobOrderRequest
+                    {
+                        TokenId = outcomes[0].TokenId,
+                        ConditionId = draft.ConditionId,
+                        MarketTitle = trade.MarketTitle,
+                        Outcome = outcomes[0].Name,
+                        Side = "BUY",
+                        OrderType = draft.OrderType,
+                        Size = draft.Size,
+                        Price = outcomes[0].Price > 0m ? outcomes[0].Price : 0.50m,
+                        MaxSlippagePercent = draft.MaxSlippagePercent,
+                        IsNegRisk = false,
+                        Expiration = 0
+                    };
+                    var order2Req = new ClobOrderRequest
+                    {
+                        TokenId = outcomes[1].TokenId,
+                        ConditionId = draft.ConditionId,
+                        MarketTitle = trade.MarketTitle,
+                        Outcome = outcomes[1].Name,
+                        Side = "BUY",
+                        OrderType = draft.OrderType,
+                        Size = draft.Size,
+                        Price = outcomes[1].Price > 0m ? outcomes[1].Price : 0.50m,
+                        MaxSlippagePercent = draft.MaxSlippagePercent,
+                        IsNegRisk = false,
+                        Expiration = 0
+                    };
+
+                    var res1 = await _clobClient.PostOrderAsync(_tradingCredentials!, order1Req);
+                    var res2 = await _clobClient.PostOrderAsync(_tradingCredentials!, order2Req);
+
+                    if (res1.Success || res2.Success)
+                    {
+                        record.ClobOrderId = $"Split: {ShortAddress(res1.OrderId ?? "")} / {ShortAddress(res2.OrderId ?? "")}";
+                        record.ExecutionStatus = (res1.Success && res2.Success) ? "Preenchido (Split Real)" : "Split Parcial";
+                        record.AmountLabel = $"${(res1.TotalCost + res2.TotalCost):N2}";
+                        record.ErrorMessage = res1.Success ? (res2.Success ? null : res2.ErrorMessage) : res1.ErrorMessage;
+                        await SaveSettingsAsync();
+                        _copyTradesPage.SetRecords(_copiedTrades);
+                        NotificationPopup.ShowSuccess($"Test Split real enviado com sucesso! Custo total: ${res1.TotalCost + res2.TotalCost:N2}");
+                    }
+                    else
+                    {
+                        record.ExecutionStatus = "Falhou";
+                        record.ErrorMessage = $"Lado 1: {res1.ErrorMessage}; Lado 2: {res2.ErrorMessage}";
+                        await SaveSettingsAsync();
+                        _copyTradesPage.SetRecords(_copiedTrades);
+                        NotificationPopup.ShowError($"Test Split rejeitado: {record.ErrorMessage}");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    record.ExecutionStatus = "Erro";
+                    record.ErrorMessage = ex.Message;
+                    await SaveSettingsAsync();
+                    _copyTradesPage.SetRecords(_copiedTrades);
+                    NotificationPopup.ShowError($"Erro no Test Split: {ex.Message}");
+                }
+                return;
+            }
+
             try
             {
                 var clobRequest = new ClobOrderRequest
@@ -433,7 +511,25 @@ public partial class MainWindow : Window
         if (RegisterCopiedTrade(trade, dialog.Draft))
         {
             await SaveSettingsAsync();
-            NotificationPopup.ShowSuccess("Trade marcado para cópia. Nenhuma ordem foi enviada.");
+            if (draft.IsSplit)
+            {
+                try
+                {
+                    var paperMarket = new PaperMarket
+                    {
+                        Id = draft.ConditionId,
+                        ConditionId = draft.ConditionId,
+                        Title = trade.MarketTitle,
+                        Outcomes = [
+                            new MarketOutcome { Name = "Up", TokenId = draft.TokenId, Price = 0.5m },
+                            new MarketOutcome { Name = "Down", TokenId = draft.TokenId + "_opp", Price = 0.5m }
+                        ]
+                    };
+                    _paperTradingPage.SimulateSplitDirect(paperMarket, draft.Size * draft.Price);
+                }
+                catch { }
+            }
+            NotificationPopup.ShowSuccess(draft.IsSplit ? "Test Split simulado executado com sucesso." : "Trade marcado para cópia. Nenhuma ordem foi enviada.");
         }
         else
         {

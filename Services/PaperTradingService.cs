@@ -330,6 +330,63 @@ public sealed class PaperTradingService
         return order;
     }
 
+    public PaperOrder ClosePositionMarket(
+        PaperAccount account,
+        PaperPosition position,
+        decimal sharesToClose,
+        MarketOrderBook? orderBook = null)
+    {
+        if (position.Status != "Open" || position.Shares <= 0m)
+        {
+            throw new InvalidDataException("Esta posição não está aberta.");
+        }
+
+        var shares = Math.Min(sharesToClose, position.Shares);
+        if (shares <= 0m)
+        {
+            throw new InvalidDataException("Informe uma quantidade de shares válida para fechar.");
+        }
+
+        var bestBid = orderBook?.BestBid ?? 0m;
+        var fillPrice = bestBid > 0m
+            ? bestBid
+            : (position.CurrentPrice > 0m ? position.CurrentPrice : position.AveragePrice);
+
+        fillPrice = Math.Clamp(fillPrice, 0.01m, 0.99m);
+        var totalProceeds = shares * fillPrice;
+
+        account.Balance += totalProceeds;
+        ClosePosition(account, position, shares, fillPrice);
+
+        var order = new PaperOrder
+        {
+            MarketId = position.ConditionId,
+            ConditionId = position.ConditionId,
+            TokenId = position.TokenId,
+            MarketTitle = position.MarketTitle,
+            Outcome = position.Outcome,
+            Side = "SELL",
+            OrderType = "FOK",
+            Shares = shares,
+            FilledShares = shares,
+            Price = fillPrice,
+            LimitPrice = fillPrice,
+            TotalCost = totalProceeds,
+            Status = "Filled"
+        };
+        account.Orders.Insert(0, order);
+        return order;
+    }
+
+    public void ResetAccount(PaperAccount account, decimal startingBalance = 10_000m)
+    {
+        account.StartingBalance = startingBalance;
+        account.Balance = startingBalance;
+        account.RealizedPnl = 0m;
+        account.Orders.Clear();
+        account.Positions.Clear();
+    }
+
     private static void ValidateRequest(PaperOrderRequest request)
     {
         if (request.Shares <= 0m || request.Price <= 0m || request.Price >= 1m)

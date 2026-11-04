@@ -1,7 +1,7 @@
 <Window x:Class="WalletCopy.CopyTradeDialog"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Copiar trade" Width="490" SizeToContent="Height"
+        Title="Copiar trade" Width="510" SizeToContent="Height"
         WindowStartupLocation="CenterOwner" ResizeMode="NoResize"
         Icon="{DynamicResource AppIcon}"
         Background="{DynamicResource ThemeBackground}"
@@ -24,12 +24,24 @@
 
             <TextBlock Text="MODO DE CÓPIA" FontSize="9" FontWeight="Bold"
                        Foreground="{DynamicResource ThemeSecondary}"/>
-            <StackPanel Orientation="Horizontal" Margin="0,8,0,16">
+            <StackPanel Orientation="Horizontal" Margin="0,8,0,14">
                 <RadioButton x:Name="AutomaticMode" Content="Automático (Replicar)" IsChecked="True"
                              GroupName="CopyMode" Checked="Mode_Changed" Margin="0,0,24,0"/>
                 <RadioButton x:Name="ManualMode" Content="Manual (Ajustar)"
                              GroupName="CopyMode" Checked="Mode_Changed"/>
             </StackPanel>
+
+            <!-- Opção Test Split -->
+            <Border Background="{DynamicResource ThemeControl}" CornerRadius="9" Padding="12,10" Margin="0,0,0,16">
+                <StackPanel>
+                    <CheckBox x:Name="TestSplitCheckBox" Content="🛡️ Modo Test Split (Compra ambos os lados · Risco zero de perda)"
+                              FontWeight="SemiBold" FontSize="11" Foreground="{DynamicResource ThemeText}"
+                              Checked="TestSplit_Changed" Unchecked="TestSplit_Changed"/>
+                    <TextBlock x:Name="TestSplitInfoText" Visibility="Collapsed"
+                               Text="O Test Split compra os dois lados do mercado simultaneamente (ex: 5 Up + 5 Down). Na Polymarket, 1 Up + 1 Down pagam exatamente $1.00 garantido na liquidação. Não há risco de perder o valor investido, ideal para testar se suas assinaturas e ordens reais estão chegando perfeitamente na exchange."
+                               FontSize="10" Foreground="{DynamicResource ThemeAccent}" TextWrapping="Wrap" Margin="0,8,0,0"/>
+                </StackPanel>
+            </Border>
 
             <Border x:Name="AutomaticPanel" Background="{DynamicResource ThemeControl}"
                     CornerRadius="9" Padding="12" Margin="0,0,0,16">

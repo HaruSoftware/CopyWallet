@@ -100,7 +100,7 @@
                             <TextBlock Text="Carteiras" VerticalAlignment="Center"/>
                         </StackPanel>
                     </Button>
-                    <Button x:Name="MarketsNavigation" Style="{StaticResource NavigationButton}"
+                    <Button x:Name="MarketsNavigation" Style="{StaticResource NavigationButton}" Visibility="Collapsed"
                             Tag="Markets" Click="Navigate_Click">
                         <StackPanel Orientation="Horizontal">
                             <fa:ImageAwesome Icon="BarChart" Width="16" Height="16"

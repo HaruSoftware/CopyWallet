@@ -1,28 +1,117 @@
 <UserControl x:Class="WalletCopy.Pages.PaperTradingPage"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ui="http://schemas.modernwpf.com/2019"
              xmlns:models="clr-namespace:WalletCopy.Models"
              Background="Transparent" FontFamily="Arial">
+    <UserControl.Resources>
+        <Style x:Key="TimeframeTabButton" TargetType="RadioButton">
+            <Setter Property="Background" Value="{DynamicResource ThemeControl}"/>
+            <Setter Property="Foreground" Value="{DynamicResource ThemeSecondary}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource ThemeBorder}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding" Value="14,6"/>
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Margin" Value="0,0,6,0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="RadioButton">
+                        <Border x:Name="border" Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="8" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="{DynamicResource ThemeAccent}"/>
+                                <Setter TargetName="border" Property="BorderBrush" Value="{DynamicResource ThemeAccent}"/>
+                                <Setter Property="Foreground" Value="{DynamicResource ThemeAccentText}"/>
+                            </Trigger>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="BorderBrush" Value="{DynamicResource ThemeAccent}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="SideTabButton" TargetType="RadioButton">
+            <Setter Property="Background" Value="{DynamicResource ThemeControl}"/>
+            <Setter Property="Foreground" Value="{DynamicResource ThemeSecondary}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource ThemeBorder}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding" Value="0,8"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="RadioButton">
+                        <Border x:Name="border" Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="8" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="{DynamicResource ThemeAccent}"/>
+                                <Setter TargetName="border" Property="BorderBrush" Value="{DynamicResource ThemeAccent}"/>
+                                <Setter Property="Foreground" Value="{DynamicResource ThemeAccentText}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="QuickAmountButton" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+            <Setter Property="Background" Value="{DynamicResource ThemeControl}"/>
+            <Setter Property="Foreground" Value="{DynamicResource ThemeSecondary}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource ThemeBorder}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="FontSize" Value="10"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Padding" Value="8,4"/>
+            <Setter Property="Margin" Value="0,0,4,0"/>
+            <Setter Property="Height" Value="26"/>
+        </Style>
+    </UserControl.Resources>
+
     <ScrollViewer VerticalScrollBarVisibility="Auto">
         <StackPanel Margin="28,25,28,30">
-            <Grid Margin="0,0,0,20">
+            <!-- Header do Terminal -->
+            <Grid Margin="0,0,0,18">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
                 <StackPanel>
-                    <TextBlock Text="Terminal simulado" FontSize="27" FontWeight="Bold"/>
-                    <TextBlock Text="Mercados públicos, execução contra o book e liquidação virtual. Ordens nunca são enviadas."
-                               Foreground="{DynamicResource ThemeSecondary}" FontSize="12" Margin="0,5,0,0"/>
+                    <TextBlock Text="Terminal Simulado Polymarket" FontSize="26" FontWeight="Bold"/>
+                    <TextBlock Text="Cripto Up/Down em tempo real com feeds da Polymarket e liquidação automática."
+                               Foreground="{DynamicResource ThemeSecondary}" FontSize="12" Margin="0,4,0,0"/>
                 </StackPanel>
-                <Border HorizontalAlignment="Right" VerticalAlignment="Center"
-                        Background="{DynamicResource ThemeSuccessBackground}"
-                        BorderBrush="{DynamicResource ThemeBorderStrong}" BorderThickness="1"
-                        CornerRadius="10" Padding="11,8">
-                    <StackPanel Orientation="Horizontal">
-                        <Ellipse Width="6" Height="6" Fill="{DynamicResource ThemeAccent}" Margin="0,0,8,0"/>
-                        <TextBlock Text="PAPER ACCOUNT" FontSize="9" FontWeight="Bold"
-                                   Foreground="{DynamicResource ThemeAccent}"/>
-                    </StackPanel>
-                </Border>
+                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                    <Button Content="🔄  Resetar Saldo ($10.000)" Click="ResetAccount_Click"
+                            Background="{DynamicResource ThemeControl}" Foreground="{DynamicResource ThemeSecondary}"
+                            FontSize="10" Padding="12,6" Height="34" Margin="0,0,10,0" ToolTip="Restaura saldo para $10.000 e limpa histórico simulado"/>
+                    <Border Background="{DynamicResource ThemeSuccessBackground}"
+                            BorderBrush="{DynamicResource ThemeBorderStrong}" BorderThickness="1"
+                            CornerRadius="10" Padding="11,8">
+                        <StackPanel Orientation="Horizontal">
+                            <Ellipse Width="7" Height="7" Fill="{DynamicResource ThemeAccent}" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                            <TextBlock Text="PAPER ACCOUNT" FontSize="9" FontWeight="Bold"
+                                       Foreground="{DynamicResource ThemeAccent}" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
             </Grid>
 
+            <!-- Cards de Resumo da Conta -->
             <Grid Margin="0,0,0,18">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
@@ -34,71 +123,86 @@
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
                 <Border Background="{DynamicResource ThemePanel}" BorderBrush="{DynamicResource ThemeBorder}"
-                        BorderThickness="1" CornerRadius="11" Padding="13,11">
+                        BorderThickness="1" CornerRadius="12" Padding="14,12">
                     <StackPanel>
                         <TextBlock Text="SALDO DISPONÍVEL" FontSize="9" FontWeight="Bold"
                                    Foreground="{DynamicResource ThemeSecondary}"/>
-                        <TextBlock x:Name="BalanceText" FontSize="18" FontWeight="SemiBold" Margin="0,5,0,0"/>
+                        <TextBlock x:Name="BalanceText" FontSize="19" FontWeight="Bold" Margin="0,6,0,0"
+                                   Foreground="{DynamicResource ThemeText}"/>
                     </StackPanel>
                 </Border>
                 <Border Grid.Column="2" Background="{DynamicResource ThemePanel}" BorderBrush="{DynamicResource ThemeBorder}"
-                        BorderThickness="1" CornerRadius="11" Padding="13,11">
+                        BorderThickness="1" CornerRadius="12" Padding="14,12">
                     <StackPanel>
                         <TextBlock Text="VALOR EM POSIÇÕES" FontSize="9" FontWeight="Bold"
                                    Foreground="{DynamicResource ThemeSecondary}"/>
-                        <TextBlock x:Name="PositionValueText" FontSize="18" FontWeight="SemiBold" Margin="0,5,0,0"/>
+                        <TextBlock x:Name="PositionValueText" FontSize="19" FontWeight="Bold" Margin="0,6,0,0"
+                                   Foreground="{DynamicResource ThemeText}"/>
                     </StackPanel>
                 </Border>
                 <Border Grid.Column="4" Background="{DynamicResource ThemePanel}" BorderBrush="{DynamicResource ThemeBorder}"
-                        BorderThickness="1" CornerRadius="11" Padding="13,11">
+                        BorderThickness="1" CornerRadius="12" Padding="14,12">
                     <StackPanel>
                         <TextBlock Text="PNL NÃO REALIZADO" FontSize="9" FontWeight="Bold"
                                    Foreground="{DynamicResource ThemeSecondary}"/>
-                        <TextBlock x:Name="UnrealizedPnlText" FontSize="18" FontWeight="SemiBold" Margin="0,5,0,0"/>
+                        <TextBlock x:Name="UnrealizedPnlText" FontSize="19" FontWeight="Bold" Margin="0,6,0,0"/>
                     </StackPanel>
                 </Border>
                 <Border Grid.Column="6" Background="{DynamicResource ThemePanel}" BorderBrush="{DynamicResource ThemeBorder}"
-                        BorderThickness="1" CornerRadius="11" Padding="13,11">
+                        BorderThickness="1" CornerRadius="12" Padding="14,12">
                     <StackPanel>
                         <TextBlock Text="PNL REALIZADO" FontSize="9" FontWeight="Bold"
                                    Foreground="{DynamicResource ThemeSecondary}"/>
-                        <TextBlock x:Name="RealizedPnlText" FontSize="18" FontWeight="SemiBold" Margin="0,5,0,0"/>
+                        <TextBlock x:Name="RealizedPnlText" FontSize="19" FontWeight="Bold" Margin="0,6,0,0"/>
                     </StackPanel>
                 </Border>
             </Grid>
 
+            <!-- Área Principal (Lista de Mercados à Esquerda + Ticket Polymarket à Direita) -->
             <Grid>
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="1.08*"/>
+                    <ColumnDefinition Width="1.1*"/>
                     <ColumnDefinition Width="14"/>
-                    <ColumnDefinition Width="0.92*"/>
+                    <ColumnDefinition Width="0.9*"/>
                 </Grid.ColumnDefinitions>
 
+                <!-- Coluna da Esquerda: Mercados Cripto Ativos -->
                 <Border Background="{DynamicResource ThemePanel}" BorderBrush="{DynamicResource ThemeBorder}"
-                        BorderThickness="1" CornerRadius="14" Padding="15">
+                        BorderThickness="1" CornerRadius="14" Padding="16">
                     <DockPanel LastChildFill="True">
                         <StackPanel DockPanel.Dock="Top">
-                            <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="12"/>
-                                    <ColumnDefinition Width="145"/>
-                                </Grid.ColumnDefinitions>
-                                <TextBox x:Name="MarketSearchInput" Height="36" Padding="10,0"
-                                         VerticalContentAlignment="Center" TextChanged="MarketSearchInput_TextChanged"
-                                         ToolTip="Buscar eventos e mercados"/>
-                                <ComboBox x:Name="MarketFilterSelector" Grid.Column="2" Height="36"
-                                          SelectionChanged="MarketFilterSelector_SelectionChanged" SelectedIndex="0">
-                                    <ComboBoxItem Content="Todos"/>
-                                    <ComboBoxItem Content="Rápidos"/>
-                                    <ComboBoxItem Content="Em alta"/>
-                                </ComboBox>
+                            <!-- Abas de Tempo / Timeframe (5m padrão como pedido) -->
+                            <TextBlock Text="FILTRAR POR TEMPO" FontSize="9" FontWeight="Bold"
+                                       Foreground="{DynamicResource ThemeSecondary}" Margin="0,0,0,6"/>
+                            <WrapPanel Orientation="Horizontal" Margin="0,0,0,12">
+                                <RadioButton Content="5 Minutos" Style="{StaticResource TimeframeTabButton}"
+                                             IsChecked="True" Checked="TimeframeFilter_Checked" Tag="5m"/>
+                                <RadioButton Content="15 Minutos" Style="{StaticResource TimeframeTabButton}"
+                                             Checked="TimeframeFilter_Checked" Tag="15m"/>
+                                <RadioButton Content="1 Hora" Style="{StaticResource TimeframeTabButton}"
+                                             Checked="TimeframeFilter_Checked" Tag="1h"/>
+                                <RadioButton Content="4 Horas" Style="{StaticResource TimeframeTabButton}"
+                                             Checked="TimeframeFilter_Checked" Tag="4h"/>
+                                <RadioButton Content="Todos Cripto" Style="{StaticResource TimeframeTabButton}"
+                                             Checked="TimeframeFilter_Checked" Tag="Todos"/>
+                            </WrapPanel>
+
+                            <!-- Busca por Ativo -->
+                            <TextBox x:Name="MarketSearchInput" Height="36" Padding="10,0"
+                                     VerticalContentAlignment="Center" TextChanged="MarketSearchInput_TextChanged"
+                                     ui:ControlHelper.PlaceholderText="Filtrar por moeda (BTC, ETH, SOL, XRP, DOGE...)"
+                                     Margin="0,0,0,10"/>
+
+                            <Grid Margin="0,0,0,8">
+                                <TextBlock Text="MERCADOS CRIPTO ATIVOS (ROUND ATUAL)"
+                                           FontSize="9" FontWeight="Bold" Foreground="{DynamicResource ThemeSecondary}"/>
+                                <TextBlock x:Name="MarketCountBadge" HorizontalAlignment="Right"
+                                           FontSize="9" Foreground="{DynamicResource ThemeMuted}"/>
                             </Grid>
-                            <TextBlock Text="EVENTOS PÚBLICOS · SELECIONE PARA ABRIR"
-                                       FontSize="9" FontWeight="Bold"
-                                       Foreground="{DynamicResource ThemeSecondary}" Margin="2,14,0,7"/>
                         </StackPanel>
-                        <ListBox x:Name="MarketSelector" Height="480"
+
+                        <!-- Lista de Mercados -->
+                        <ListBox x:Name="MarketSelector" Height="500"
                                  SelectionChanged="MarketSelector_SelectionChanged"
                                  ScrollViewer.VerticalScrollBarVisibility="Auto"
                                  ScrollViewer.CanContentScroll="True"
@@ -113,7 +217,7 @@
                             <ListBox.ItemContainerStyle>
                                 <Style TargetType="ListBoxItem">
                                     <Setter Property="Padding" Value="0"/>
-                                    <Setter Property="Margin" Value="0,0,0,5"/>
+                                    <Setter Property="Margin" Value="0,0,0,7"/>
                                     <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
                                     <Setter Property="Background" Value="Transparent"/>
                                     <Setter Property="BorderThickness" Value="0"/>
@@ -121,35 +225,44 @@
                             </ListBox.ItemContainerStyle>
                             <ListBox.ItemTemplate>
                                 <DataTemplate DataType="{x:Type models:MarketCard}">
-                                    <Border Background="{DynamicResource ThemePanelRaised}" CornerRadius="9" Padding="11,9">
+                                    <Border Background="{DynamicResource ThemePanelRaised}" BorderBrush="{DynamicResource ThemeBorder}"
+                                            BorderThickness="1" CornerRadius="10" Padding="12,10">
                                         <Grid>
                                             <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto"/>
+                                                <ColumnDefinition Width="10"/>
                                                 <ColumnDefinition Width="*"/>
                                                 <ColumnDefinition Width="Auto"/>
                                             </Grid.ColumnDefinitions>
-                                            <StackPanel>
-                                                <TextBlock Text="{Binding Title}" FontSize="11" FontWeight="SemiBold"
-                                                           TextWrapping="Wrap" MaxHeight="34"/>
-                                                <TextBlock Text="{Binding EventTitle}" FontSize="9"
-                                                           Foreground="{DynamicResource ThemeMuted}" Margin="0,4,0,0"
-                                                           TextTrimming="CharacterEllipsis"/>
-                                                <TextBlock Text="{Binding VolumeLabel}" FontSize="9"
-                                                           Foreground="{DynamicResource ThemeSecondary}" Margin="0,4,0,0"/>
+
+                                            <!-- Ícone / Sigla do Ativo -->
+                                            <Border Width="38" Height="38" CornerRadius="8"
+                                                    Background="{DynamicResource ThemeControl}"
+                                                    HorizontalAlignment="Center" VerticalAlignment="Center">
+                                                <TextBlock Text="{Binding Asset}" FontSize="11" FontWeight="Bold"
+                                                           Foreground="{DynamicResource ThemeAccent}"
+                                                           HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                            </Border>
+
+                                            <!-- Info do Mercado -->
+                                            <StackPanel Grid.Column="2" VerticalAlignment="Center">
+                                                <TextBlock Text="{Binding Title}" FontSize="12" FontWeight="SemiBold"
+                                                           TextWrapping="Wrap" MaxHeight="36"/>
+                                                <StackPanel Orientation="Horizontal" Margin="0,3,0,0">
+                                                    <TextBlock Text="{Binding VolumeLabel}" FontSize="9"
+                                                               Foreground="{DynamicResource ThemeMuted}"/>
+                                                    <TextBlock Text="  •  " FontSize="9" Foreground="{DynamicResource ThemeSecondary}"/>
+                                                    <TextBlock Text="{Binding TimeRemainingLabel}" FontSize="9"
+                                                               Foreground="{DynamicResource ThemeAccent}" FontWeight="SemiBold"/>
+                                                </StackPanel>
                                             </StackPanel>
-                                            <Border Grid.Column="1" VerticalAlignment="Top"
+
+                                            <!-- Badge do Timeframe -->
+                                            <Border Grid.Column="3" VerticalAlignment="Center"
                                                     Background="{DynamicResource ThemeSuccessBackground}"
-                                                    CornerRadius="6" Padding="7,4">
-                                                <Border.Style>
-                                                    <Style TargetType="Border">
-                                                        <Setter Property="Visibility" Value="Visible"/>
-                                                        <Style.Triggers>
-                                                            <DataTrigger Binding="{Binding TimeframeLabel}" Value="">
-                                                                <Setter Property="Visibility" Value="Collapsed"/>
-                                                            </DataTrigger>
-                                                        </Style.Triggers>
-                                                    </Style>
-                                                </Border.Style>
-                                                <TextBlock Text="{Binding TimeframeLabel}" FontSize="9" FontWeight="Bold"
+                                                    BorderBrush="{DynamicResource ThemeBorderStrong}" BorderThickness="1"
+                                                    CornerRadius="6" Padding="8,4">
+                                                <TextBlock Text="{Binding TimeframeLabel}" FontSize="10" FontWeight="Bold"
                                                            Foreground="{DynamicResource ThemeAccent}"/>
                                             </Border>
                                         </Grid>
@@ -160,35 +273,183 @@
                     </DockPanel>
                 </Border>
 
+                <!-- Coluna da Direita: Ticket Estilo Polymarket -->
                 <Border Grid.Column="2" Background="{DynamicResource ThemePanel}" BorderBrush="{DynamicResource ThemeBorder}"
                         BorderThickness="1" CornerRadius="14" Padding="18">
                     <StackPanel>
-                        <Grid>
+                        <!-- Cabeçalho do Ticket -->
+                        <Grid Margin="0,0,0,12">
                             <StackPanel>
-                                <TextBlock Text="Ticket de ordem" FontSize="16" FontWeight="SemiBold"/>
-                                <TextBlock Text="Simulação preenchida com liquidez pública do book."
-                                           FontSize="10" Foreground="{DynamicResource ThemeSecondary}" Margin="0,4,0,0"/>
+                                <TextBlock Text="Ticket de Negociação" FontSize="17" FontWeight="Bold"/>
+                                <TextBlock x:Name="SelectedMarketText" Text="Selecione um mercado para abrir o ticket"
+                                           FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource ThemeSecondary}"
+                                           TextWrapping="Wrap" Margin="0,3,0,0"/>
                             </StackPanel>
-                            <TextBlock x:Name="SelectedMarketTimer" HorizontalAlignment="Right" VerticalAlignment="Center"
-                                       FontSize="10" Foreground="{DynamicResource ThemeAccent}"/>
+                            <TextBlock x:Name="SelectedMarketTimer" HorizontalAlignment="Right" VerticalAlignment="Top"
+                                       FontSize="11" FontWeight="Bold" Foreground="{DynamicResource ThemeAccent}"/>
                         </Grid>
-                        <TextBlock x:Name="SelectedMarketText" Text="Clique em um evento para abrir o mercado"
-                                   Foreground="{DynamicResource ThemeSecondary}" TextWrapping="Wrap"
-                                   FontSize="12" FontWeight="SemiBold" Margin="0,16,0,12"/>
-                        <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
-                            <Ellipse x:Name="MarketStreamIndicator" Width="6" Height="6"
-                                     Fill="{DynamicResource ThemeDim}" Margin="0,0,7,0"
-                                     VerticalAlignment="Center"/>
-                            <TextBlock x:Name="MarketStreamStatus" Text="Nenhum mercado selecionado"
-                                       FontSize="9" Foreground="{DynamicResource ThemeSecondary}"
-                                       VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
-                        </StackPanel>
-                        <TextBlock Text="OUTCOME" FontSize="9" FontWeight="Bold"
-                                   Foreground="{DynamicResource ThemeSecondary}"/>
-                        <ComboBox x:Name="OutcomeSelector" Height="36" Margin="0,7,0,12"
-                                  DisplayMemberPath="Name" SelectionChanged="OutcomeSelector_SelectionChanged"/>
 
-                        <Border Background="{DynamicResource ThemePanelRaised}" CornerRadius="9" Padding="10,9">
+                        <!-- Indicador de Stream Live -->
+                        <Border Background="{DynamicResource ThemePanelRaised}" CornerRadius="8" Padding="10,6" Margin="0,0,0,14">
+                            <StackPanel Orientation="Horizontal">
+                                <Ellipse x:Name="MarketStreamIndicator" Width="8" Height="8"
+                                         Fill="{DynamicResource ThemeDim}" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                                <TextBlock x:Name="MarketStreamStatus" Text="Nenhum mercado selecionado"
+                                           FontSize="10" Foreground="{DynamicResource ThemeSecondary}" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- SELEÇÃO UP / DOWN (ESTILO POLYMARKET COM PREÇOS AO VIVO) -->
+                        <TextBlock Text="ESCOLHA O RESULTADO (OUTCOME)" FontSize="9" FontWeight="Bold"
+                                   Foreground="{DynamicResource ThemeSecondary}" Margin="0,0,0,8"/>
+                        <Grid Margin="0,0,0,14">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="10"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+
+                            <!-- Botão UP / YES -->
+                            <Border x:Name="UpOutcomeCard" Background="{DynamicResource ThemeControl}"
+                                    BorderBrush="{DynamicResource ThemeAccent}" BorderThickness="2"
+                                    CornerRadius="10" Padding="12,10" Cursor="Hand"
+                                    MouseLeftButtonUp="UpOutcomeCard_Click">
+                                <StackPanel>
+                                    <Grid>
+                                        <TextBlock x:Name="UpOutcomeLabel" Text="UP" FontSize="14" FontWeight="Bold"
+                                                   Foreground="{DynamicResource ThemeAccent}"/>
+                                        <TextBlock x:Name="UpReturnMultiple" Text="+92%" HorizontalAlignment="Right"
+                                                   FontSize="11" FontWeight="Bold" Foreground="{DynamicResource ThemeAccent}"/>
+                                    </Grid>
+                                    <TextBlock x:Name="UpPriceText" Text="52¢" FontSize="20" FontWeight="Bold"
+                                               Margin="0,4,0,0" Foreground="{DynamicResource ThemeText}"/>
+                                    <TextBlock Text="Retorno: $1.00 por share" FontSize="8"
+                                               Foreground="{DynamicResource ThemeSecondary}" Margin="0,2,0,0"/>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- Botão DOWN / NO -->
+                            <Border x:Name="DownOutcomeCard" Grid.Column="2" Background="{DynamicResource ThemeControl}"
+                                    BorderBrush="{DynamicResource ThemeBorder}" BorderThickness="1"
+                                    CornerRadius="10" Padding="12,10" Cursor="Hand"
+                                    MouseLeftButtonUp="DownOutcomeCard_Click">
+                                <StackPanel>
+                                    <Grid>
+                                        <TextBlock x:Name="DownOutcomeLabel" Text="DOWN" FontSize="14" FontWeight="Bold"
+                                                   Foreground="{DynamicResource ThemeError}"/>
+                                        <TextBlock x:Name="DownReturnMultiple" Text="+108%" HorizontalAlignment="Right"
+                                                   FontSize="11" FontWeight="Bold" Foreground="{DynamicResource ThemeError}"/>
+                                    </Grid>
+                                    <TextBlock x:Name="DownPriceText" Text="48¢" FontSize="20" FontWeight="Bold"
+                                               Margin="0,4,0,0" Foreground="{DynamicResource ThemeText}"/>
+                                    <TextBlock Text="Retorno: $1.00 por share" FontSize="8"
+                                               Foreground="{DynamicResource ThemeSecondary}" Margin="0,2,0,0"/>
+                                </StackPanel>
+                            </Border>
+                        </Grid>
+
+                        <!-- Combo Outcome Selector Oculto para Binding de Compatibilidade -->
+                        <ComboBox x:Name="OutcomeSelector" Visibility="Collapsed" DisplayMemberPath="Name"
+                                  SelectionChanged="OutcomeSelector_SelectionChanged"/>
+
+                        <!-- Lado da Ordem (COMPRAR / VENDER) -->
+                        <Grid Margin="0,0,0,12">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="8"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <RadioButton x:Name="SideBuyRadio" Content="COMPRAR" Style="{StaticResource SideTabButton}"
+                                         IsChecked="True" Checked="Side_Checked"/>
+                            <RadioButton x:Name="SideSellRadio" Grid.Column="2" Content="VENDER" Style="{StaticResource SideTabButton}"
+                                         Checked="Side_Checked"/>
+                        </Grid>
+
+                        <!-- Tipo de Ordem (Mercado / Limite) -->
+                        <Grid Margin="0,0,0,12">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="10"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel>
+                                <TextBlock Text="TIPO DE EXECUÇÃO" FontSize="9" FontWeight="Bold"
+                                           Foreground="{DynamicResource ThemeSecondary}"/>
+                                <ComboBox x:Name="OrderTypeSelector" Height="36" Margin="0,5,0,0" SelectedIndex="0"
+                                          SelectionChanged="OrderTypeSelector_SelectionChanged">
+                                    <ComboBoxItem Content="A Mercado (FOK)"/>
+                                    <ComboBoxItem Content="Limite (GTC)"/>
+                                </ComboBox>
+                            </StackPanel>
+                            <StackPanel Grid.Column="2">
+                                <TextBlock Text="PREÇO LIMITE ($)" FontSize="9" FontWeight="Bold"
+                                           Foreground="{DynamicResource ThemeSecondary}"/>
+                                <TextBox x:Name="PriceInput" Height="36" Margin="0,5,0,0"
+                                         Padding="10,0" VerticalContentAlignment="Center" Text="0.50"
+                                         TextChanged="PriceInput_TextChanged"/>
+                            </StackPanel>
+                        </Grid>
+
+                        <!-- Valor da Ordem em Dólar ($) com Presets Rápidos -->
+                        <TextBlock Text="VALOR DO TRADE (USD)" FontSize="9" FontWeight="Bold"
+                                   Foreground="{DynamicResource ThemeSecondary}"/>
+                        <Grid Margin="0,5,0,6">
+                            <TextBox x:Name="AmountUsdInput" Height="38" Padding="12,0"
+                                     VerticalContentAlignment="Center" FontSize="14" FontWeight="SemiBold"
+                                     Text="50.00" TextChanged="AmountUsdInput_TextChanged"/>
+                        </Grid>
+                        <!-- Presets de Valor Rápido: +$10, +$25, +$50, +$100, MAX -->
+                        <WrapPanel Orientation="Horizontal" Margin="0,0,0,12">
+                            <Button Content="+$10" Style="{StaticResource QuickAmountButton}" Tag="10" Click="QuickAmount_Click"/>
+                            <Button Content="+$25" Style="{StaticResource QuickAmountButton}" Tag="25" Click="QuickAmount_Click"/>
+                            <Button Content="+$50" Style="{StaticResource QuickAmountButton}" Tag="50" Click="QuickAmount_Click"/>
+                            <Button Content="+$100" Style="{StaticResource QuickAmountButton}" Tag="100" Click="QuickAmount_Click"/>
+                            <Button Content="MAX" Style="{StaticResource QuickAmountButton}" Tag="MAX" Click="QuickAmount_Click"/>
+                        </WrapPanel>
+
+                        <!-- Shares Calculadas (Oculto ou Secundário) -->
+                        <TextBox x:Name="SharesInput" Visibility="Collapsed" Text="100" TextChanged="OrderInput_TextChanged"/>
+
+                        <!-- CARD DE PROJEÇÃO DE RETORNO ("O PREÇO QUE VOU GANHAR") -->
+                        <Border Background="{DynamicResource ThemePanelRaised}" BorderBrush="{DynamicResource ThemeBorderStrong}"
+                                BorderThickness="1" CornerRadius="10" Padding="12,10" Margin="0,0,0,12">
+                            <StackPanel>
+                                <Grid Margin="0,0,0,4">
+                                    <TextBlock Text="Shares Estimadas:" FontSize="10" Foreground="{DynamicResource ThemeSecondary}"/>
+                                    <TextBlock x:Name="EstimatedSharesText" Text="96.15 shares" HorizontalAlignment="Right"
+                                               FontSize="11" FontWeight="SemiBold"/>
+                                </Grid>
+                                <Grid Margin="0,0,0,4">
+                                    <TextBlock Text="Retorno Potencial (se vencer):" FontSize="10" Foreground="{DynamicResource ThemeSecondary}"/>
+                                    <TextBlock x:Name="PotentialReturnText" Text="$96.15" HorizontalAlignment="Right"
+                                               FontSize="12" FontWeight="Bold" Foreground="{DynamicResource ThemeText}"/>
+                                </Grid>
+                                <Border Background="{DynamicResource ThemeBorder}" Height="1" Margin="0,4,0,6"/>
+                                <Grid>
+                                    <TextBlock Text="Lucro Líquido Estimado:" FontSize="10" FontWeight="Bold"
+                                               Foreground="{DynamicResource ThemeSecondary}"/>
+                                    <TextBlock x:Name="ProjectedProfitText" Text="+$46.15 (+92.3%)" HorizontalAlignment="Right"
+                                               FontSize="13" FontWeight="Bold" Foreground="{DynamicResource ThemeAccent}"/>
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+
+                        <CheckBox x:Name="SplitCheckBox" Content="Test Split (comprar ambos os lados simultaneamente)"
+                                  Margin="0,0,0,8" FontSize="10" Checked="SplitCheckBox_Changed" Unchecked="SplitCheckBox_Changed"/>
+
+                        <!-- Aviso de Validação -->
+                        <TextBlock x:Name="ValidationText" Foreground="{DynamicResource ThemeError}"
+                                   FontSize="10" TextWrapping="Wrap" Margin="0,0,0,8"/>
+
+                        <!-- Botão de Ação Principal -->
+                        <Button x:Name="SimulateButton" Content="Comprar UP · $50.00" Click="Simulate_Click"
+                                Background="{DynamicResource ThemeAccent}" Foreground="{DynamicResource ThemeAccentText}"
+                                FontWeight="Bold" FontSize="13" Height="42"
+                                HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                                IsEnabled="False"/>
+
+                        <!-- Livro de Ofertas Resumido -->
+                        <Border Background="{DynamicResource ThemeControl}" CornerRadius="8" Padding="10,8" Margin="0,14,0,0">
                             <Grid>
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*"/>
@@ -196,175 +457,118 @@
                                     <ColumnDefinition Width="*"/>
                                 </Grid.ColumnDefinitions>
                                 <StackPanel>
-                                    <TextBlock Text="MELHOR BID" FontSize="8" FontWeight="Bold"
-                                               Foreground="{DynamicResource ThemeSecondary}"/>
-                                    <TextBlock x:Name="BestBidText" Text="—" FontSize="12" FontWeight="SemiBold" Margin="0,4,0,0"/>
+                                    <TextBlock Text="MELHOR BID" FontSize="8" FontWeight="Bold" Foreground="{DynamicResource ThemeSecondary}"/>
+                                    <TextBlock x:Name="BestBidText" Text="—" FontSize="11" FontWeight="SemiBold" Margin="0,2,0,0"/>
                                 </StackPanel>
                                 <StackPanel Grid.Column="1">
-                                    <TextBlock Text="MELHOR ASK" FontSize="8" FontWeight="Bold"
-                                               Foreground="{DynamicResource ThemeSecondary}"/>
-                                    <TextBlock x:Name="BestAskText" Text="—" FontSize="12" FontWeight="SemiBold" Margin="0,4,0,0"/>
+                                    <TextBlock Text="MELHOR ASK" FontSize="8" FontWeight="Bold" Foreground="{DynamicResource ThemeSecondary}"/>
+                                    <TextBlock x:Name="BestAskText" Text="—" FontSize="11" FontWeight="SemiBold" Margin="0,2,0,0"/>
                                 </StackPanel>
                                 <StackPanel Grid.Column="2">
-                                    <TextBlock Text="SPREAD" FontSize="8" FontWeight="Bold"
-                                               Foreground="{DynamicResource ThemeSecondary}"/>
-                                    <TextBlock x:Name="SpreadText" Text="—" FontSize="12" FontWeight="SemiBold" Margin="0,4,0,0"/>
+                                    <TextBlock Text="SPREAD" FontSize="8" FontWeight="Bold" Foreground="{DynamicResource ThemeSecondary}"/>
+                                    <TextBlock x:Name="SpreadText" Text="—" FontSize="11" FontWeight="SemiBold" Margin="0,2,0,0"/>
                                 </StackPanel>
                             </Grid>
                         </Border>
-                        <Grid Margin="0,12,0,6">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="10"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-                            <StackPanel>
-                                <TextBlock Text="AÇÃO" FontSize="9" FontWeight="Bold"
-                                           Foreground="{DynamicResource ThemeSecondary}"/>
-                                <ComboBox x:Name="SideSelector" Height="36" Margin="0,7,0,0"
-                                          SelectionChanged="SideSelector_SelectionChanged" SelectedIndex="0">
-                                    <ComboBoxItem Content="BUY"/>
-                                    <ComboBoxItem Content="SELL"/>
-                                </ComboBox>
-                            </StackPanel>
-                            <StackPanel Grid.Column="2">
-                                <TextBlock Text="TIPO DE ORDEM" FontSize="9" FontWeight="Bold"
-                                           Foreground="{DynamicResource ThemeSecondary}"/>
-                                <ComboBox x:Name="OrderTypeSelector" Height="36" Margin="0,7,0,0" SelectedIndex="0">
-                                    <ComboBoxItem Content="FOK"/>
-                                    <ComboBoxItem Content="FAK"/>
-                                    <ComboBoxItem Content="GTC"/>
-                                </ComboBox>
-                            </StackPanel>
-                        </Grid>
-                        <Grid Margin="0,6,0,0">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="10"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-                            <StackPanel>
-                                <TextBlock Text="SHARES" FontSize="9" FontWeight="Bold"
-                                           Foreground="{DynamicResource ThemeSecondary}"/>
-                                <TextBox x:Name="SharesInput" Height="36" Margin="0,7,0,0"
-                                         Padding="9,0" VerticalContentAlignment="Center" Text="10"
-                                         TextChanged="OrderInput_TextChanged"/>
-                            </StackPanel>
-                            <StackPanel Grid.Column="2">
-                                <TextBlock Text="PREÇO LIMITE" FontSize="9" FontWeight="Bold"
-                                           Foreground="{DynamicResource ThemeSecondary}"/>
-                                <TextBox x:Name="PriceInput" Height="36" Margin="0,7,0,0"
-                                         Padding="9,0" VerticalContentAlignment="Center" Text="0.50"
-                                         TextChanged="PriceInput_TextChanged"/>
-                            </StackPanel>
-                        </Grid>
-                        <TextBlock x:Name="OrderEstimateText" FontSize="10"
-                                   Foreground="{DynamicResource ThemeSecondary}" Margin="0,9,0,0"/>
-                        <CheckBox x:Name="SplitCheckBox" Content="Simular split de dois outcomes"
-                                  Margin="0,12,0,0"/>
-                        <TextBlock x:Name="ValidationText" Foreground="{DynamicResource ThemeError}"
-                                   FontSize="10" TextWrapping="Wrap" Margin="0,10,0,0"/>
-                        <Button x:Name="SimulateButton" Content="Simular ordem" Click="Simulate_Click"
-                                Background="{DynamicResource ThemeAccent}" Foreground="{DynamicResource ThemeAccentText}"
-                                HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
-                                Margin="0,14,0,0" IsEnabled="False"/>
-                        <TextBlock Text="BOOK · 5 NÍVEIS" FontSize="9" FontWeight="Bold"
-                                   Foreground="{DynamicResource ThemeSecondary}" Margin="0,17,0,7"/>
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="10"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-                            <TextBlock x:Name="BidDepthText" FontSize="9" Foreground="{DynamicResource ThemeAccent}"
-                                       FontFamily="Consolas" TextWrapping="Wrap"/>
-                            <TextBlock x:Name="AskDepthText" Grid.Column="2" FontSize="9"
-                                       Foreground="{DynamicResource ThemeError}" FontFamily="Consolas"
-                                       TextWrapping="Wrap"/>
-                        </Grid>
                     </StackPanel>
                 </Border>
             </Grid>
 
+            <!-- Seção Inferior: Posições Abertas (com Fechar e Fechar Parcial) & Histórico -->
             <Grid Margin="0,18,0,0">
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="1.1*"/>
                     <ColumnDefinition Width="14"/>
-                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="0.9*"/>
                 </Grid.ColumnDefinitions>
+
+                <!-- Posições Abertas -->
                 <Border Background="{DynamicResource ThemePanel}" BorderBrush="{DynamicResource ThemeBorder}"
-                        BorderThickness="1" CornerRadius="14" Padding="15">
+                        BorderThickness="1" CornerRadius="14" Padding="16">
                     <StackPanel>
-                        <TextBlock Text="Posições simuladas" FontSize="15" FontWeight="SemiBold"/>
-                        <ItemsControl x:Name="PositionList" Margin="0,12,0,0">
+                        <Grid Margin="0,0,0,12">
+                            <TextBlock Text="Posições Abertas em Tempo Real" FontSize="15" FontWeight="Bold"/>
+                            <TextBlock Text="Liquidação automática no encerramento ($1.00 por share vencedora)"
+                                       HorizontalAlignment="Right" FontSize="9" Foreground="{DynamicResource ThemeMuted}"
+                                       VerticalAlignment="Center"/>
+                        </Grid>
+
+                        <ItemsControl x:Name="PositionList">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate DataType="{x:Type models:PaperPosition}">
-                                    <Border Background="{DynamicResource ThemePanelRaised}" CornerRadius="9"
-                                            Padding="11,9" Margin="0,0,0,7">
+                                    <Border Background="{DynamicResource ThemePanelRaised}" BorderBrush="{DynamicResource ThemeBorder}"
+                                            BorderThickness="1" CornerRadius="10" Padding="12,10" Margin="0,0,0,8">
                                         <Grid>
                                             <Grid.ColumnDefinitions>
                                                 <ColumnDefinition Width="*"/>
                                                 <ColumnDefinition Width="Auto"/>
+                                                <ColumnDefinition Width="Auto"/>
                                             </Grid.ColumnDefinitions>
                                             <StackPanel>
-                                                <TextBlock Text="{Binding MarketTitle}" FontSize="11" FontWeight="SemiBold"
-                                                           TextWrapping="Wrap"/>
-                                                <TextBlock Text="{Binding PositionLabel}" FontSize="9"
-                                                           Foreground="{DynamicResource ThemeMuted}" Margin="0,4,0,0"/>
-                                                <TextBlock Text="{Binding Status}" FontSize="8"
+                                                <TextBlock Text="{Binding MarketTitle}" FontSize="12" FontWeight="SemiBold" TextWrapping="Wrap"/>
+                                                <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                                                    <Border Background="{DynamicResource ThemeSuccessBackground}" CornerRadius="5" Padding="6,2" Margin="0,0,8,0">
+                                                        <TextBlock Text="{Binding Outcome}" FontSize="9" FontWeight="Bold" Foreground="{DynamicResource ThemeAccent}"/>
+                                                    </Border>
+                                                    <TextBlock Text="{Binding PositionLabel}" FontSize="9" Foreground="{DynamicResource ThemeMuted}" VerticalAlignment="Center"/>
+                                                </StackPanel>
+                                                <TextBlock Text="🏆 Paga $1.00/share se vencer no encerramento" FontSize="8"
                                                            Foreground="{DynamicResource ThemeSecondary}" Margin="0,4,0,0"/>
                                             </StackPanel>
-                                            <StackPanel Grid.Column="1" HorizontalAlignment="Right"
-                                                        VerticalAlignment="Center">
-                                                <TextBlock Text="{Binding ValueLabel}" FontSize="11"
-                                                           FontWeight="SemiBold" HorizontalAlignment="Right"/>
-                                                <TextBlock Text="{Binding PnlLabel}" FontSize="10"
-                                                           Foreground="{DynamicResource ThemeAccent}"
-                                                           HorizontalAlignment="Right" Margin="0,4,0,0"/>
+
+                                            <!-- PnL ao Vivo -->
+                                            <StackPanel Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="14,0">
+                                                <TextBlock Text="{Binding ValueLabel}" FontSize="12" FontWeight="Bold" HorizontalAlignment="Right"/>
+                                                <TextBlock Text="{Binding PnlLabel}" FontSize="11" FontWeight="Bold"
+                                                           Foreground="{DynamicResource ThemeAccent}" HorizontalAlignment="Right" Margin="0,2,0,0"/>
+                                            </StackPanel>
+
+                                            <!-- Ações: Fechar 100% e Fechar 50% -->
+                                            <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                                                <Button Content="Fechar 50%" Tag="{Binding}" Click="ClosePartial_Click"
+                                                        FontSize="9" Padding="8,5" Background="{DynamicResource ThemeControl}"
+                                                        Margin="0,0,5,0" ToolTip="Vende metade das shares a mercado"/>
+                                                <Button Content="Fechar 100%" Tag="{Binding}" Click="CloseFull_Click"
+                                                        FontSize="9" Padding="8,5" Background="{DynamicResource ThemePanelRaised}"
+                                                        BorderBrush="{DynamicResource ThemeAccent}" BorderThickness="1"
+                                                        ToolTip="Fecha toda a posição a mercado imediatamente"/>
                                             </StackPanel>
                                         </Grid>
                                     </Border>
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
-                        <TextBlock x:Name="PositionsEmptyState" Text="Nenhuma posição simulada aberta."
-                                   Foreground="{DynamicResource ThemeSecondary}" FontSize="10"
-                                   HorizontalAlignment="Center" Margin="10"/>
+                        <TextBlock x:Name="PositionsEmptyState" Text="Nenhuma posição simulada aberta no momento."
+                                   Foreground="{DynamicResource ThemeSecondary}" FontSize="11" HorizontalAlignment="Center" Margin="16"/>
                     </StackPanel>
                 </Border>
+
+                <!-- Ordens Recentes -->
                 <Border Grid.Column="2" Background="{DynamicResource ThemePanel}" BorderBrush="{DynamicResource ThemeBorder}"
-                        BorderThickness="1" CornerRadius="14" Padding="15">
+                        BorderThickness="1" CornerRadius="14" Padding="16">
                     <StackPanel>
-                        <TextBlock Text="Ordens recentes" FontSize="15" FontWeight="SemiBold"/>
-                        <ItemsControl x:Name="OrderList" Margin="0,12,0,0">
+                        <TextBlock Text="Ordens Recentes" FontSize="15" FontWeight="Bold" Margin="0,0,0,12"/>
+                        <ItemsControl x:Name="OrderList">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate DataType="{x:Type models:PaperOrder}">
-                                    <Border Background="{DynamicResource ThemePanelRaised}" CornerRadius="9"
-                                            Padding="11,9" Margin="0,0,0,7">
+                                    <Border Background="{DynamicResource ThemePanelRaised}" BorderBrush="{DynamicResource ThemeBorder}"
+                                            BorderThickness="1" CornerRadius="10" Padding="11,8" Margin="0,0,0,7">
                                         <Grid>
                                             <Grid.ColumnDefinitions>
                                                 <ColumnDefinition Width="*"/>
                                                 <ColumnDefinition Width="Auto"/>
                                             </Grid.ColumnDefinitions>
                                             <StackPanel>
-                                                <TextBlock Text="{Binding MarketTitle}" FontSize="11" FontWeight="SemiBold"
-                                                           TextWrapping="Wrap"/>
-                                                <TextBlock Text="{Binding TradeLabel}" FontSize="9"
-                                                           Foreground="{DynamicResource ThemeMuted}" Margin="0,4,0,0"/>
-                                                <TextBlock Text="{Binding StatusLabel}" FontSize="9"
-                                                           Foreground="{DynamicResource ThemeSecondary}" Margin="0,4,0,0"/>
+                                                <TextBlock Text="{Binding MarketTitle}" FontSize="11" FontWeight="SemiBold" TextWrapping="Wrap"/>
+                                                <TextBlock Text="{Binding TradeLabel}" FontSize="9" Foreground="{DynamicResource ThemeMuted}" Margin="0,3,0,0"/>
+                                                <TextBlock Text="{Binding StatusLabel}" FontSize="9" Foreground="{DynamicResource ThemeSecondary}" Margin="0,2,0,0"/>
                                             </StackPanel>
-                                            <StackPanel Grid.Column="1" HorizontalAlignment="Right"
-                                                        VerticalAlignment="Center">
-                                                <TextBlock Text="{Binding TotalCost, StringFormat={}{0:C2}}"
-                                                           FontSize="11" FontWeight="SemiBold"
-                                                           HorizontalAlignment="Right"/>
-                                                <Button Content="Cancelar GTC" Tag="{Binding Id}"
-                                                        Click="CancelOrder_Click" FontSize="9" Padding="7,4"
-                                                        Margin="0,5,0,0">
+                                            <StackPanel Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center">
+                                                <TextBlock Text="{Binding TotalCost, StringFormat={}{0:C2}}" FontSize="11" FontWeight="Bold" HorizontalAlignment="Right"/>
+                                                <Button Content="Cancelar GTC" Tag="{Binding Id}" Click="CancelOrder_Click"
+                                                        FontSize="9" Padding="7,4" Margin="0,4,0,0">
                                                     <Button.Style>
-                                                        <Style TargetType="Button"
-                                                               BasedOn="{StaticResource {x:Type Button}}">
+                                                        <Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
                                                             <Setter Property="Visibility" Value="Collapsed"/>
                                                             <Style.Triggers>
                                                                 <DataTrigger Binding="{Binding Status}" Value="Open">
@@ -383,9 +587,8 @@
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
-                        <TextBlock x:Name="OrdersEmptyState" Text="Nenhuma ordem simulada ainda."
-                                   Foreground="{DynamicResource ThemeSecondary}" FontSize="10"
-                                   HorizontalAlignment="Center" Margin="10"/>
+                        <TextBlock x:Name="OrdersEmptyState" Text="Nenhuma ordem simulada registrada."
+                                   Foreground="{DynamicResource ThemeSecondary}" FontSize="11" HorizontalAlignment="Center" Margin="16"/>
                     </StackPanel>
                 </Border>
             </Grid>

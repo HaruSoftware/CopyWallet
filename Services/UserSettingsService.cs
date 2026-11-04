@@ -43,4 +43,7 @@ public sealed class UserSettings
     public List<string> AutoCopyWalletAddresses { get; set; } = [];
     public List<CopyTradeRecord> CopiedTrades { get; set; } = [];
     public PaperAccount PaperAccount { get; set; } = new();
+    public decimal DefaultSlippagePercent { get; set; } = 1.5m;
+    public decimal MaxTradeValueGuardrail { get; set; } = 100m;
+    public int RefreshIntervalSeconds { get; set; } = 15;
 }

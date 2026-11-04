@@ -12,4 +12,5 @@ public sealed class CopyTradeDraft
     public decimal Size { get; init; }
     public decimal Price { get; init; }
     public decimal MaxSlippagePercent { get; init; }
+    public bool IsSplit { get; init; }
 }

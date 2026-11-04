@@ -4,6 +4,7 @@ public sealed class MarketCard
 {
     public string Title { get; init; } = "Mercado";
     public string EventTitle { get; init; } = "";
+    public string Asset { get; init; } = "";
     public string ImageUrl { get; init; } = "";
     public string VolumeLabel { get; init; } = "";
     public string Category { get; init; } = "Polymarket";
@@ -16,4 +17,18 @@ public sealed class MarketCard
     public bool IsClosed { get; init; }
     public string TimeframeLabel { get; init; } = "";
     public List<MarketOutcome> Outcomes { get; init; } = [];
+
+    public bool IsFastCrypto => !string.IsNullOrEmpty(TimeframeLabel);
+
+    public string TimeRemainingLabel
+    {
+        get
+        {
+            if (!EndDate.HasValue) return "";
+            var diff = EndDate.Value - DateTime.UtcNow;
+            if (diff <= TimeSpan.Zero) return "Encerrado";
+            if (diff.TotalHours >= 1) return $"{(int)diff.TotalHours}h {diff.Minutes:D2}m";
+            return $"{diff.Minutes:D2}:{diff.Seconds:D2}";
+        }
+    }
 }
