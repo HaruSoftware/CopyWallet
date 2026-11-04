@@ -28,8 +28,10 @@ public partial class PaperTradingPage : UserControl
     private readonly DispatcherTimer _marketCountdownTimer = new() { Interval = TimeSpan.FromSeconds(1) };
     private readonly Dictionary<string, MarketOrderBook> _liveBooks = new(StringComparer.Ordinal);
     private readonly Dictionary<string, MarketOrderBook> _pendingLiveBooks = new(StringComparer.Ordinal);
+    private readonly object _pendingBookLock = new();
     private PaperAccount _account = new();
     private MarketOrderBook? _currentOrderBook;
+    private string? _currentOrderBookTokenId;
     private CancellationTokenSource? _bookLoadCancellation;
     private CancellationTokenSource? _marketStreamCancellation;
     private string? _activeMarketId;
@@ -38,6 +40,9 @@ public partial class PaperTradingPage : UserControl
     private bool _isRefreshingOutcomes;
     private bool _isSettingDefaultPrice;
     private bool _hasUserEditedPrice;
+    private bool _bookUpdateQueued;
+    private decimal? _lastDisplayedUpPrice;
+    private decimal? _lastDisplayedDownPrice;
     private IReadOnlyList<MarketCard>? _marketSnapshot;
 
     public event EventHandler<PaperAccount>? AccountChanged;
@@ -246,7 +251,10 @@ public partial class PaperTradingPage : UserControl
         _activeMarketId = market.ConditionId;
         _liveBooks.Clear();
         _pendingLiveBooks.Clear();
+        _lastDisplayedUpPrice = null;
+        _lastDisplayedDownPrice = null;
         _currentOrderBook = null;
+        _currentOrderBookTokenId = null;
         _hasUserEditedPrice = false;
         SelectedMarketText.Text = market.Title;
         MarketStreamStatus.Text = "Carregando book público…";
@@ -534,16 +542,23 @@ public partial class PaperTradingPage : UserControl
     private void ApplyPendingBookUpdates()
     {
         _liveBookUpdateTimer.Stop();
-        if (_pendingLiveBooks.Count == 0)
+        Dictionary<string, MarketOrderBook> updates;
+        lock (_pendingBookLock)
         {
-            return;
+            _bookUpdateQueued = false;
+            if (_pendingLiveBooks.Count == 0)
+            {
+                return;
+            }
+
+            updates = new Dictionary<string, MarketOrderBook>(_pendingLiveBooks, StringComparer.Ordinal);
+            _pendingLiveBooks.Clear();
         }
 
-        foreach (var update in _pendingLiveBooks)
+        foreach (var update in updates)
         {
             _liveBooks[update.Key] = update.Value;
         }
-        _pendingLiveBooks.Clear();
 
         UpdateOutcomePricesFromBooks();
 
@@ -559,8 +574,9 @@ public partial class PaperTradingPage : UserControl
         if (_outcomes.Count > 0 && _liveBooks.TryGetValue(_outcomes[0].TokenId, out var upBook))
         {
             var upPrice = upBook.BestAsk > 0m ? upBook.BestAsk : (upBook.BestBid > 0m ? upBook.BestBid : _outcomes[0].Price);
-            if (upPrice > 0m)
+            if (upPrice > 0m && _lastDisplayedUpPrice != upPrice)
             {
+                _lastDisplayedUpPrice = upPrice;
                 UpPriceText.Text = $"{Math.Round(upPrice * 100m):0}¢";
                 var multiple = Math.Round(((1.00m - upPrice) / upPrice) * 100m, 1);
                 UpReturnMultiple.Text = $"+{multiple}%";
@@ -570,8 +586,9 @@ public partial class PaperTradingPage : UserControl
         if (_outcomes.Count > 1 && _liveBooks.TryGetValue(_outcomes[1].TokenId, out var downBook))
         {
             var downPrice = downBook.BestAsk > 0m ? downBook.BestAsk : (downBook.BestBid > 0m ? downBook.BestBid : _outcomes[1].Price);
-            if (downPrice > 0m)
+            if (downPrice > 0m && _lastDisplayedDownPrice != downPrice)
             {
+                _lastDisplayedDownPrice = downPrice;
                 DownPriceText.Text = $"{Math.Round(downPrice * 100m):0}¢";
                 var multiple = Math.Round(((1.00m - downPrice) / downPrice) * 100m, 1);
                 DownReturnMultiple.Text = $"+{multiple}%";
@@ -581,7 +598,17 @@ public partial class PaperTradingPage : UserControl
 
     private void ApplyOrderBook(string assetId, MarketOrderBook orderBook)
     {
+        var bookChanged = _currentOrderBook is null
+            || !string.Equals(_currentOrderBookTokenId, assetId, StringComparison.Ordinal)
+            || _currentOrderBook.BestBid != orderBook.BestBid
+            || _currentOrderBook.BestAsk != orderBook.BestAsk;
         _currentOrderBook = orderBook;
+        _currentOrderBookTokenId = assetId;
+        if (!bookChanged)
+        {
+            return;
+        }
+
         UpdateOrderBookLabels(orderBook);
         SimulateButton.IsEnabled = true;
         ValidationText.Text = "";
@@ -664,18 +691,30 @@ public partial class PaperTradingPage : UserControl
                 assetIds,
                 async (assetId, orderBook) =>
                 {
-                    await Dispatcher.InvokeAsync(() =>
+                    var shouldQueue = false;
+                    lock (_pendingBookLock)
                     {
                         if (!cancellationToken.IsCancellationRequested
                             && string.Equals(_activeMarketId, marketId, StringComparison.OrdinalIgnoreCase))
                         {
                             _pendingLiveBooks[assetId] = orderBook;
-                            if (!_liveBookUpdateTimer.IsEnabled)
-                            {
-                                _liveBookUpdateTimer.Start();
-                            }
+                            shouldQueue = !_bookUpdateQueued;
+                            _bookUpdateQueued = true;
                         }
-                    });
+                    }
+
+                    if (shouldQueue)
+                    {
+                        await Dispatcher.BeginInvoke(
+                            DispatcherPriority.Background,
+                            new Action(() =>
+                            {
+                                if (!_liveBookUpdateTimer.IsEnabled)
+                                {
+                                    _liveBookUpdateTimer.Start();
+                                }
+                            }));
+                    }
                 },
                 status => Dispatcher.BeginInvoke(() =>
                 {
@@ -719,7 +758,11 @@ public partial class PaperTradingPage : UserControl
         _bookLoadCancellation = null;
         _liveBookUpdateTimer.Stop();
         _marketCountdownTimer.Stop();
-        _pendingLiveBooks.Clear();
+        lock (_pendingBookLock)
+        {
+            _bookUpdateQueued = false;
+            _pendingLiveBooks.Clear();
+        }
     }
 
     private async Task LoadOrderBookAsync(MarketCard market, MarketOutcome outcome)
