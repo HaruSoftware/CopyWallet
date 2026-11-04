@@ -21,7 +21,7 @@ public partial class NotificationHost : UserControl
 
     public void ShowError(string message) => Show("Não foi possível concluir", message, "#F28C8C", "#392528", "×");
 
-    public void ShowInformation(string message) => Show("Informação", message, "#93A5FF", "#252C43", "i");
+    public void ShowInformation(string message) => Show("Informação", message, "#8497FF", "#252C43", "i");
 
     private void Show(string title, string message, string accent, string iconBackground, string icon)
     {

@@ -32,6 +32,10 @@ public partial class App : System.Windows.Application
         SetBrush("ThemeControl", isLight ? "#E9ECF1" : "#1B212C");
         SetBrush("ThemeSuccessBackground", isLight ? "#E1F4E9" : "#20362D");
         SetBrush("ThemeErrorBackground", isLight ? "#FBE7E7" : "#421B1B");
+        SetBrush("ThemeAccent", isLight ? "#2D9B63" : "#64E2A2");
+        SetBrush("ThemeAccentBlue", isLight ? "#5E6ED6" : "#8497FF");
+        SetBrush("ThemePending", isLight ? "#A66D00" : "#E8B867");
+        SetBrush("ThemeError", isLight ? "#C53D52" : "#F28C8C");
         SetBrush("ThemeAccentText", isLight ? "#123D26" : "#092015");
     }
 

@@ -377,8 +377,9 @@
                                            Foreground="{DynamicResource ThemeSecondary}"/>
                                 <ComboBox x:Name="OrderTypeSelector" Height="36" Margin="0,5,0,0" SelectedIndex="0"
                                           SelectionChanged="OrderTypeSelector_SelectionChanged">
-                                    <ComboBoxItem Content="A Mercado (FOK)"/>
-                                    <ComboBoxItem Content="Limite (GTC)"/>
+                                    <ComboBoxItem Content="A Mercado · FOK"/>
+                                    <ComboBoxItem Content="Parcial · FAK"/>
+                                    <ComboBoxItem Content="Limite · GTC"/>
                                 </ComboBox>
                             </StackPanel>
                             <StackPanel Grid.Column="2">
@@ -475,6 +476,60 @@
             </Grid>
 
             <!-- Seção Inferior: Posições Abertas (com Fechar e Fechar Parcial) & Histórico -->
+            <Border Background="{DynamicResource ThemePanel}" BorderBrush="{DynamicResource ThemeBorder}"
+                    BorderThickness="1" CornerRadius="14" Padding="16" Margin="0,18,0,0">
+                <StackPanel>
+                    <Grid Margin="0,0,0,14">
+                        <StackPanel>
+                            <TextBlock Text="Painel de ordens" FontSize="15" FontWeight="Bold"/>
+                            <TextBlock Text="Acompanhe execução, liquidez reservada e resultado do paper trading."
+                                       FontSize="10" Foreground="{DynamicResource ThemeSecondary}" Margin="0,3,0,0"/>
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                            <RadioButton Content="Todas" Tag="Todos" Style="{StaticResource TimeframeTabButton}"
+                                         IsChecked="True" Checked="OrderFilter_Checked"/>
+                            <RadioButton Content="Abertas" Tag="Abertas" Style="{StaticResource TimeframeTabButton}"
+                                         Checked="OrderFilter_Checked"/>
+                            <RadioButton Content="Executadas" Tag="Executadas" Style="{StaticResource TimeframeTabButton}"
+                                         Checked="OrderFilter_Checked"/>
+                        </StackPanel>
+                    </Grid>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="12"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="12"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="12"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="12"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel>
+                            <TextBlock Text="ORDENS" FontSize="9" FontWeight="Bold" Foreground="{DynamicResource ThemeSecondary}"/>
+                            <TextBlock x:Name="OrdersCountText" FontSize="18" FontWeight="Bold" Margin="0,4,0,0"/>
+                        </StackPanel>
+                        <StackPanel Grid.Column="2">
+                            <TextBlock Text="EM ABERTO" FontSize="9" FontWeight="Bold" Foreground="{DynamicResource ThemeSecondary}"/>
+                            <TextBlock x:Name="OpenOrdersCountText" FontSize="18" FontWeight="Bold" Margin="0,4,0,0" Foreground="{DynamicResource ThemePending}"/>
+                        </StackPanel>
+                        <StackPanel Grid.Column="4">
+                            <TextBlock Text="VOLUME EXECUTADO" FontSize="9" FontWeight="Bold" Foreground="{DynamicResource ThemeSecondary}"/>
+                            <TextBlock x:Name="ExecutedVolumeText" FontSize="18" FontWeight="Bold" Margin="0,4,0,0"/>
+                        </StackPanel>
+                        <StackPanel Grid.Column="6">
+                            <TextBlock Text="PNL TOTAL" FontSize="9" FontWeight="Bold" Foreground="{DynamicResource ThemeSecondary}"/>
+                            <TextBlock x:Name="TotalPnlText" FontSize="18" FontWeight="Bold" Margin="0,4,0,0"/>
+                        </StackPanel>
+                        <StackPanel Grid.Column="8">
+                            <TextBlock Text="RESERVADO" FontSize="9" FontWeight="Bold" Foreground="{DynamicResource ThemeSecondary}"/>
+                            <TextBlock x:Name="ReservedCashText" FontSize="18" FontWeight="Bold" Margin="0,4,0,0" Foreground="{DynamicResource ThemeAccentBlue}"/>
+                        </StackPanel>
+                    </Grid>
+                </StackPanel>
+            </Border>
+
             <Grid Margin="0,18,0,0">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="1.1*"/>

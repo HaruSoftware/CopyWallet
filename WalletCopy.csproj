@@ -9,6 +9,7 @@
     <RootNamespace>WalletCopy</RootNamespace>
     <AssemblyName>WalletCopy</AssemblyName>
     <ApplicationIcon>app-icon.ico</ApplicationIcon>
+    <NoWarn>$(NoWarn);NU1701</NoWarn>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="FontAwesome.WPF" Version="4.7.0.9" />

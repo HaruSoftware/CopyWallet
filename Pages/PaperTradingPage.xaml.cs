@@ -19,6 +19,7 @@ public partial class PaperTradingPage : UserControl
     private readonly ObservableCollection<MarketCard> _visibleMarkets = [];
     private readonly ObservableCollection<MarketOutcome> _outcomes = [];
     private readonly ObservableCollection<PaperOrder> _orders = [];
+    private readonly ObservableCollection<PaperOrder> _visibleOrders = [];
     private readonly ObservableCollection<PaperPosition> _positions = [];
     private readonly PaperTradingService _service = new();
     private readonly PolymarketApiClient _apiClient;
@@ -33,6 +34,7 @@ public partial class PaperTradingPage : UserControl
     private CancellationTokenSource? _marketStreamCancellation;
     private string? _activeMarketId;
     private string _activeTimeframeFilter = "5m";
+    private string _activeOrderFilter = "Todos";
     private bool _isRefreshingOutcomes;
     private bool _isSettingDefaultPrice;
     private bool _hasUserEditedPrice;
@@ -46,7 +48,7 @@ public partial class PaperTradingPage : UserControl
         InitializeComponent();
         MarketSelector.ItemsSource = _visibleMarkets;
         OutcomeSelector.ItemsSource = _outcomes;
-        OrderList.ItemsSource = _orders;
+        OrderList.ItemsSource = _visibleOrders;
         PositionList.ItemsSource = _positions;
         _searchDebounce.Tick += (_, _) =>
         {
@@ -423,6 +425,18 @@ public partial class PaperTradingPage : UserControl
         UpdateOrderEstimate();
     }
 
+    private void OrderFilter_Checked(object sender, RoutedEventArgs e)
+    {
+        if (sender is RadioButton { Tag: string tag })
+        {
+            _activeOrderFilter = tag;
+            if (OrdersCountText is not null)
+            {
+                RefreshOrders();
+            }
+        }
+    }
+
     private void QuickAmount_Click(object sender, RoutedEventArgs e)
     {
         if (sender is Button { Tag: string tag })
@@ -768,7 +782,12 @@ public partial class PaperTradingPage : UserControl
                 }
 
                 var side = SideBuyRadio.IsChecked == true ? "BUY" : "SELL";
-                var orderType = OrderTypeSelector.SelectedIndex == 1 ? "GTC" : "FOK";
+                var orderType = OrderTypeSelector.SelectedIndex switch
+                {
+                    1 => "FAK",
+                    2 => "GTC",
+                    _ => "FOK"
+                };
 
                 order = _service.Simulate(_account, new PaperOrderRequest
                 {
@@ -877,15 +896,36 @@ public partial class PaperTradingPage : UserControl
 
     private void RefreshCollections()
     {
+        RefreshOrders();
+        RefreshPositions();
+        RefreshSummary();
+    }
+
+    private void RefreshOrders()
+    {
         _orders.Clear();
         foreach (var order in _account.Orders)
         {
             _orders.Add(order);
         }
 
-        RefreshPositions();
-        OrdersEmptyState.Visibility = _orders.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
-        RefreshSummary();
+        _visibleOrders.Clear();
+        foreach (var order in _orders.Where(order => _activeOrderFilter switch
+        {
+            "Abertas" => order.Status is "Open" or "Partial fill",
+            "Executadas" => order.Status is "Filled" or "Cancelled",
+            _ => true
+        }))
+        {
+            _visibleOrders.Add(order);
+        }
+
+        OrdersEmptyState.Visibility = _visibleOrders.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+        OrdersCountText.Text = _orders.Count.ToString(CultureInfo.InvariantCulture);
+        OpenOrdersCountText.Text = _orders.Count(order => order.Status is "Open" or "Partial fill")
+            .ToString(CultureInfo.InvariantCulture);
+        ExecutedVolumeText.Text = $"${_orders.Sum(order => order.TotalCost):N2}";
+        ReservedCashText.Text = $"${_orders.Sum(order => order.ReservedCash):N2}";
     }
 
     private void RefreshPositions()
@@ -906,8 +946,10 @@ public partial class PaperTradingPage : UserControl
         PositionValueText.Text = $"${openPositions.Sum(position => position.MarketValue):N2}";
         UnrealizedPnlText.Text = $"{openPositions.Sum(position => position.UnrealizedPnl):+$#,0.00;-$#,0.00;$0.00}";
         RealizedPnlText.Text = $"{_account.RealizedPnl:+$#,0.00;-$#,0.00;$0.00}";
+        TotalPnlText.Text = $"{(_account.RealizedPnl + openPositions.Sum(position => position.UnrealizedPnl)):+$#,0.00;-$#,0.00;$0.00}";
         UnrealizedPnlText.Foreground = GetPnlBrush(openPositions.Sum(position => position.UnrealizedPnl));
         RealizedPnlText.Foreground = GetPnlBrush(_account.RealizedPnl);
+        TotalPnlText.Foreground = GetPnlBrush(_account.RealizedPnl + openPositions.Sum(position => position.UnrealizedPnl));
     }
 
     private static Brush GetPnlBrush(decimal pnl) =>
