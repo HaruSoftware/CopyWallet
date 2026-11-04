@@ -28,6 +28,8 @@ public partial class NotificationHost : UserControl
         TitleText.Text = title;
         MessageText.Text = message;
         SeverityBar.Background = CreateBrush(accent);
+        IconCircle.Background = CreateBrush(iconBackground);
+        IconText.Text = icon;
         ToastCard.Visibility = Visibility.Visible;
         ToastCard.Opacity = 1;
         _dismissTimer.Stop();

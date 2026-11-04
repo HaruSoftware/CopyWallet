@@ -28,9 +28,12 @@ public partial class MainWindow : Window
     private readonly DashboardPage _dashboardPage = new();
     private readonly WalletsPage _walletsPage = new();
     private readonly MarketsPage _marketsPage = new();
-    private readonly PaperTradingPage _paperTradingPage = new();
+    private readonly PaperTradingPage _paperTradingPage;
     private readonly CopyTradesPage _copyTradesPage = new();
     private readonly SettingsPage _settingsPage = new();
+    private readonly PolymarketClobClient _clobClient = new();
+    private readonly TradingCredentialService _credentialService = new();
+    private TradingCredentials? _tradingCredentials;
     private readonly DispatcherTimer _refreshTimer = new() { Interval = TimeSpan.FromSeconds(15) };
     private readonly ObservableCollection<CopyTradeRecord> _copiedTrades = [];
     private readonly HashSet<string> _copiedTradeKeys = new(StringComparer.Ordinal);
@@ -46,6 +49,7 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+        _paperTradingPage = new PaperTradingPage(_apiClient);
         _dashboardPage.WalletFilterChanged += DashboardWalletFilterChanged;
         _dashboardPage.CopyTradeRequested += CopyTradeRequested;
         _walletsPage.AddWalletRequested += AddWalletRequested;
@@ -55,10 +59,12 @@ public partial class MainWindow : Window
         _walletsPage.CopyTradeRequested += CopyTradeRequested;
         _walletsPage.CopyAllTradesRequested += CopyAllTradesRequested;
         _walletsPage.AutoCopyChanged += AutoCopyChanged;
+        _marketsPage.MarketSelected += MarketsPage_MarketSelected;
         _paperTradingPage.AccountChanged += PaperAccountChanged;
         _copyTradesPage.SetRecords(_copiedTrades);
         _paperTradingPage.SetAccount(new PaperAccount());
         _settingsPage.ThemeChanged += SettingsPageThemeChanged;
+        _settingsPage.CredentialsChanged += SettingsPageCredentialsChanged;
         _refreshTimer.Tick += async (_, _) => await RefreshDataAsync();
         Loaded += MainWindow_Loaded;
         Closed += (_, _) => _refreshTimer.Stop();
@@ -106,8 +112,8 @@ public partial class MainWindow : Window
                 {
                     _copiedTrades.Add(record);
                 }
-                _paperTradingPage.SetAccount(settings.PaperAccount ?? new PaperAccount());
             }
+            _paperTradingPage.SetAccount(settings.PaperAccount ?? new PaperAccount());
 
             _focusedWalletAddress = IsValidWalletAddress(settings.FocusedWalletAddress)
                                     && (_trackedWallets.Any(wallet =>
@@ -118,6 +124,9 @@ public partial class MainWindow : Window
                     ? _ownWalletAddress
                     : _trackedWallets.FirstOrDefault()?.Address ?? "";
 
+            _tradingCredentials = await _credentialService.LoadCredentialsAsync();
+            _settingsPage.SetTradingCredentials(_tradingCredentials);
+            UpdateClobStatusUi();
             settings.HasCompletedInitialSetup = true;
             UpdateWalletPage();
             if (settingsNeedSave)
@@ -164,6 +173,12 @@ public partial class MainWindow : Window
         SetNavigationState(SettingsNavigation, page == "Settings");
     }
 
+    private void MarketsPage_MarketSelected(object? sender, MarketCard market)
+    {
+        NavigateTo("PaperTrading");
+        _paperTradingPage.SelectMarket(market.ConditionId);
+    }
+
     private async void SettingsPageThemeChanged(object? sender, string preference)
     {
         _themePreference = preference;
@@ -171,6 +186,38 @@ public partial class MainWindow : Window
         if (await SaveSettingsAsync())
         {
             NotificationPopup.ShowSuccess("Tema salvo localmente.");
+        }
+    }
+
+    private void UpdateClobStatusUi()
+    {
+        var isConnected = _tradingCredentials is not null && _tradingCredentials.IsConfigured;
+        _copyTradesPage.UpdateConnectionStatus(isConnected);
+        if (isConnected)
+        {
+            SidebarModeDot.Fill = ConnectedBrush;
+            SidebarModeTitle.Text = "EXECUÇÃO CLOB ATIVA";
+            SidebarModeSubtitle.Text = "Pronto para enviar e gerenciar ordens reais na Polymarket.";
+        }
+        else
+        {
+            SidebarModeDot.Fill = PendingBrush;
+            SidebarModeTitle.Text = "MODO CONSULTA / PAPER";
+            SidebarModeSubtitle.Text = "Conecte sua conta em Configurações para habilitar ordens reais.";
+        }
+    }
+
+    private void SettingsPageCredentialsChanged(object? sender, TradingCredentials? credentials)
+    {
+        _tradingCredentials = credentials;
+        UpdateClobStatusUi();
+        if (credentials is not null && credentials.IsConfigured)
+        {
+            NotificationPopup.ShowSuccess("Conta Polymarket conectada com sucesso! Execução real de ordens habilitada.");
+        }
+        else
+        {
+            NotificationPopup.ShowInformation("Credenciais de trading desconectadas.");
         }
     }
 
@@ -306,9 +353,80 @@ public partial class MainWindow : Window
 
     private async void CopyTradeRequested(object? sender, WalletTrade trade)
     {
-        var dialog = new CopyTradeDialog(trade) { Owner = this };
+        var hasCreds = _tradingCredentials is not null && _tradingCredentials.IsConfigured;
+        var dialog = new CopyTradeDialog(trade, hasCreds) { Owner = this };
         if (dialog.ShowDialog() != true || dialog.Draft is null)
         {
+            return;
+        }
+
+        var draft = dialog.Draft;
+        var key = WalletsPage.GetTradeKey(trade);
+
+        if (draft.ExecutionTarget == "Real")
+        {
+            if (!hasCreds)
+            {
+                NotificationPopup.ShowError("Credenciais de trading não configuradas. Acesse a aba Configurações.");
+                return;
+            }
+
+            var record = CopyTradeRecord.FromTrade(trade, key, draft);
+            _copiedTradeKeys.Add(key);
+            trade.IsCopied = true;
+            _copiedTrades.Insert(0, record);
+            _walletsPage.SetCopyState(_copiedTradeKeys);
+            _dashboardPage.SetCopyState(_copiedTradeKeys);
+            _copyTradesPage.SetRecords(_copiedTrades);
+            await SaveSettingsAsync();
+
+            NotificationPopup.ShowInformation("Enviando ordem real para a Polymarket CLOB…");
+
+            try
+            {
+                var clobRequest = new ClobOrderRequest
+                {
+                    TokenId = draft.TokenId,
+                    ConditionId = draft.ConditionId,
+                    MarketTitle = trade.MarketTitle,
+                    Outcome = draft.Position,
+                    Side = draft.Side,
+                    OrderType = draft.OrderType,
+                    Size = draft.Size,
+                    Price = draft.Price,
+                    MaxSlippagePercent = draft.MaxSlippagePercent,
+                    IsNegRisk = false,
+                    Expiration = 0
+                };
+
+                var clobResult = await _clobClient.PostOrderAsync(_tradingCredentials!, clobRequest);
+                if (clobResult.Success)
+                {
+                    record.ClobOrderId = clobResult.OrderId;
+                    record.ExecutionStatus = clobResult.Status;
+                    record.AmountLabel = $"${clobResult.TotalCost:N2}";
+                    record.ErrorMessage = null;
+                    await SaveSettingsAsync();
+                    _copyTradesPage.SetRecords(_copiedTrades);
+                    NotificationPopup.ShowSuccess($"Ordem real enviada! Status: {clobResult.Status} · ID: {ShortAddress(clobResult.OrderId)}");
+                }
+                else
+                {
+                    record.ExecutionStatus = "Falhou";
+                    record.ErrorMessage = clobResult.ErrorMessage;
+                    await SaveSettingsAsync();
+                    _copyTradesPage.SetRecords(_copiedTrades);
+                    NotificationPopup.ShowError($"Ordem rejeitada: {clobResult.ErrorMessage}");
+                }
+            }
+            catch (Exception ex)
+            {
+                record.ExecutionStatus = "Erro";
+                record.ErrorMessage = ex.Message;
+                await SaveSettingsAsync();
+                _copyTradesPage.SetRecords(_copiedTrades);
+                NotificationPopup.ShowError($"Erro ao enviar ordem: {ex.Message}");
+            }
             return;
         }
 
@@ -369,7 +487,7 @@ public partial class MainWindow : Window
     private async void PaperAccountChanged(object? sender, PaperAccount account)
     {
         await SaveSettingsAsync();
-        NotificationPopup.ShowInformation("Ordem registrada apenas na conta virtual.");
+        NotificationPopup.ShowInformation("Conta virtual atualizada. Nenhuma ordem real foi enviada.");
     }
 
     private bool RegisterCopiedTrade(WalletTrade trade, CopyTradeDraft? draft = null)
@@ -422,12 +540,33 @@ public partial class MainWindow : Window
             var positionsTask = LoadFocusedPositionsAsync(_focusedWalletAddress, errors);
             var performanceTask = LoadFocusedPerformanceAsync(_focusedWalletAddress, errors);
             var pusdBalanceTask = LoadFocusedPusdBalanceAsync(_focusedWalletAddress, errors);
+            var paperResolutionsTask = LoadPaperResolutionsAsync(errors);
 
             await Task.WhenAll(tradeTasks.Cast<Task>()
                 .Append(marketsTask)
                 .Append(positionsTask)
                 .Append(performanceTask)
-                .Append(pusdBalanceTask));
+                .Append(pusdBalanceTask)
+                .Append(paperResolutionsTask));
+            var resolutionResult = _paperTradingPage.ApplyResolutions(paperResolutionsTask.Result);
+            if (resolutionResult.SettledPositions > 0 || resolutionResult.CancelledOrders > 0)
+            {
+                await SaveSettingsAsync();
+                var resolutionMessages = new List<string>();
+                if (resolutionResult.SettledPositions > 0)
+                {
+                    resolutionMessages.Add(
+                        $"{resolutionResult.SettledPositions} posição(ões) simulada(s) liquidada(s)");
+                }
+                if (resolutionResult.CancelledOrders > 0)
+                {
+                    resolutionMessages.Add(
+                        $"{resolutionResult.CancelledOrders} ordem(ns) GTC cancelada(s) porque o mercado foi encerrado");
+                }
+
+                NotificationPopup.ShowInformation(string.Join(". ", resolutionMessages) + ".");
+            }
+
             var recentTrades = tradeTasks
                 .Where(task => task.Result is not null)
                 .SelectMany(task => task.Result!)
@@ -467,6 +606,23 @@ public partial class MainWindow : Window
             {
                 _marketsPage.SetMarkets(marketsTask.Result.Markets);
                 _paperTradingPage.SetMarkets(marketsTask.Result.Markets);
+            }
+            try
+            {
+                if (await _paperTradingPage.RefreshOpenOrdersAsync())
+                {
+                    await SaveSettingsAsync();
+                    NotificationPopup.ShowInformation("Uma ordem GTC simulada recebeu novo preenchimento.");
+                }
+            }
+            catch (Exception exception) when (
+                exception is HttpRequestException
+                or TaskCanceledException
+                or System.Text.Json.JsonException
+                or InvalidDataException
+                or IOException)
+            {
+                errors.Enqueue($"Ordens simuladas: {exception.Message}");
             }
 
             CurrentWalletLabel.Text = string.IsNullOrWhiteSpace(_focusedWalletAddress)
@@ -530,6 +686,38 @@ public partial class MainWindow : Window
         {
             errors.Enqueue($"Mercados: {exception.Message}");
             return new MarketLoadResult(false, []);
+        }
+    }
+
+    private async Task<IReadOnlyList<MarketCard>> LoadPaperResolutionsAsync(ConcurrentQueue<string> errors)
+    {
+        var account = _paperTradingPage.GetAccount();
+        var conditionIds = account.Positions
+            .Where(position => position.Status == "Open")
+            .Select(position => position.ConditionId)
+            .Concat(account.Orders
+                .Where(order => (order.Status is "Open" or "Partial fill") && order.OrderType == "GTC")
+                .Select(order => order.ConditionId))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+        if (conditionIds.Length == 0)
+        {
+            return [];
+        }
+
+        try
+        {
+            return await _apiClient.GetResolvedMarketsAsync(conditionIds);
+        }
+        catch (Exception exception) when (
+            exception is HttpRequestException
+            or TaskCanceledException
+            or System.Text.Json.JsonException
+            or InvalidDataException
+            or IOException)
+        {
+            errors.Enqueue($"Resolução das posições simuladas: {exception.Message}");
+            return [];
         }
     }
 

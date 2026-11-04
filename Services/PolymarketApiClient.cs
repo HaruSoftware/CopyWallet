@@ -5,6 +5,7 @@ using System.Text.Json;
 using System.Collections.Concurrent;
 using System.Numerics;
 using System.Text;
+using System.Net.WebSockets;
 using WalletCopy.Models;
 
 namespace WalletCopy.Services;
@@ -12,10 +13,15 @@ namespace WalletCopy.Services;
 public sealed class PolymarketApiClient
 {
     private static readonly HttpClient Http = CreateHttpClient();
+    private static readonly TimeSpan MarketCacheDuration = TimeSpan.FromMinutes(1);
     private const string PolygonRpcUrl = "https://polygon-bor-rpc.publicnode.com";
     private const string PusdTokenAddress = "0xC011a7E12a19f7B1f670d46F03B03f3342E82DFB";
     private static readonly ConcurrentDictionary<string, FeeSchedule> FeeSchedules = new(StringComparer.OrdinalIgnoreCase);
     private static readonly SemaphoreSlim FeeScheduleSemaphore = new(4);
+    private static readonly Uri MarketWebSocketUri = new("wss://ws-subscriptions-clob.polymarket.com/ws/market");
+    private readonly SemaphoreSlim _marketCacheSemaphore = new(1, 1);
+    private IReadOnlyList<MarketCard>? _marketCache;
+    private DateTime _marketCacheExpiresAt;
     private static readonly JsonDocumentOptions DocumentOptions = new()
     {
         AllowTrailingCommas = true,
@@ -273,44 +279,479 @@ public sealed class PolymarketApiClient
     public async Task<IReadOnlyList<MarketCard>> GetTrendingMarketsAsync(
         CancellationToken cancellationToken = default)
     {
-        const string uri = "https://gamma-api.polymarket.com/events?active=true&closed=false&limit=8&order=volume24hr&ascending=false";
-        using var document = await GetJsonAsync(uri, cancellationToken);
-        if (document.RootElement.ValueKind != JsonValueKind.Array)
+        if (_marketCache is not null && DateTime.UtcNow < _marketCacheExpiresAt)
         {
-            throw new InvalidDataException("A resposta de mercados da Polymarket veio em um formato inesperado.");
+            return _marketCache;
         }
 
-        return document.RootElement.EnumerateArray()
-            .Select(item => new MarketCard
+        await _marketCacheSemaphore.WaitAsync(cancellationToken);
+        try
+        {
+            if (_marketCache is not null && DateTime.UtcNow < _marketCacheExpiresAt)
             {
-                MarketId = ReadString(item, "id", "conditionId", "condition_id") ?? "",
-                Slug = ReadString(item, "slug", "event_slug") ?? "",
-                Title = ReadString(item, "title", "question") ?? "Mercado sem título",
-                ImageUrl = ReadString(item, "image", "icon") ?? "",
-                Volume24h = ReadDecimal(item, "volume24hr", "volume_24hr", "volume"),
-                VolumeLabel = FormatVolume(ReadDecimal(item, "volume24hr", "volume_24hr", "volume")),
-                Category = ReadString(item, "category") ?? "Em alta",
-                Outcomes = ReadMarketOutcomes(item)
-            })
-            .ToArray();
+                return _marketCache;
+            }
+
+            const string featuredUri = "https://gamma-api.polymarket.com/events?active=true&closed=false&limit=100&order=volume24hr&ascending=false";
+            const string quickUri = "https://gamma-api.polymarket.com/events?active=true&closed=false&tag_slug=crypto&limit=100&order=endDate&ascending=true";
+            var featuredTask = GetJsonAsync(featuredUri, cancellationToken);
+            var quickTask = GetJsonAsync(quickUri, cancellationToken);
+            await Task.WhenAll(featuredTask, quickTask);
+            using var featuredDocument = await featuredTask;
+            using var quickDocument = await quickTask;
+            if (featuredDocument.RootElement.ValueKind != JsonValueKind.Array
+                || quickDocument.RootElement.ValueKind != JsonValueKind.Array)
+            {
+                throw new InvalidDataException("A resposta de mercados da Polymarket veio em um formato inesperado.");
+            }
+
+            var markets = featuredDocument.RootElement.EnumerateArray()
+                .Concat(quickDocument.RootElement.EnumerateArray())
+                .SelectMany(ReadEventMarkets)
+                .Where(market => market.IsActive
+                                 && !market.IsClosed
+                                 && !string.IsNullOrWhiteSpace(market.ConditionId))
+                .GroupBy(market => market.ConditionId, StringComparer.OrdinalIgnoreCase)
+                .Select(group => group.First())
+                .OrderByDescending(market => !string.IsNullOrEmpty(market.TimeframeLabel))
+                .ThenByDescending(market => market.Volume24h)
+                .ToArray();
+            _marketCache = markets;
+            _marketCacheExpiresAt = DateTime.UtcNow + MarketCacheDuration;
+            return _marketCache;
+        }
+        finally
+        {
+            _marketCacheSemaphore.Release();
+        }
     }
 
-    private static List<MarketOutcome> ReadMarketOutcomes(JsonElement item)
+    public async Task<MarketOrderBook> GetOrderBookAsync(
+        string tokenId,
+        CancellationToken cancellationToken = default)
     {
-        if (!item.TryGetProperty("markets", out var markets)
-           || markets.ValueKind != JsonValueKind.Array)
+        using var document = await GetJsonAsync(
+            $"https://clob.polymarket.com/book?token_id={Uri.EscapeDataString(tokenId)}",
+            cancellationToken);
+        var root = document.RootElement;
+        if (root.ValueKind != JsonValueKind.Object)
         {
-           return [];
+            throw new InvalidDataException("O book público da Polymarket veio em um formato inesperado.");
         }
 
+        return new MarketOrderBook
+        {
+            Bids = ReadOrderBookLevels(root, "bids"),
+            Asks = ReadOrderBookLevels(root, "asks")
+        };
+    }
+
+    public async Task StreamOrderBooksAsync(
+        IEnumerable<string> assetIds,
+        Func<string, MarketOrderBook, Task> onBookUpdated,
+        Action<string?> onConnectionStatusChanged,
+        CancellationToken cancellationToken = default)
+    {
+        var assets = assetIds
+            .Where(id => !string.IsNullOrWhiteSpace(id))
+            .Distinct(StringComparer.Ordinal)
+            .ToArray();
+        if (assets.Length == 0)
+        {
+            throw new ArgumentException("Ao menos um outcome é necessário para iniciar o stream.", nameof(assetIds));
+        }
+
+        var books = assets.ToDictionary(asset => asset, _ => new OrderBookState(), StringComparer.Ordinal);
+        var reconnectDelay = TimeSpan.FromSeconds(1);
+        while (!cancellationToken.IsCancellationRequested)
+        {
+            try
+            {
+                using var socket = new ClientWebSocket();
+                socket.Options.KeepAliveInterval = TimeSpan.FromSeconds(20);
+                await socket.ConnectAsync(MarketWebSocketUri, cancellationToken);
+                await socket.SendAsync(
+                    Encoding.UTF8.GetBytes(JsonSerializer.Serialize(new
+                    {
+                        assets_ids = assets,
+                        type = "market"
+                    })),
+                    WebSocketMessageType.Text,
+                    true,
+                    cancellationToken);
+                onConnectionStatusChanged("Conectado · recebendo cotações ao vivo");
+                reconnectDelay = TimeSpan.FromSeconds(1);
+
+                using var connectionCancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+                var receiveTask = ReceiveMarketStreamAsync(
+                    socket,
+                    books,
+                    onBookUpdated,
+                    connectionCancellation.Token);
+                var pingTask = SendMarketPingsAsync(socket, connectionCancellation.Token);
+                await Task.WhenAny(receiveTask, pingTask);
+                connectionCancellation.Cancel();
+                try
+                {
+                    await Task.WhenAll(receiveTask, pingTask);
+                }
+                catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+                {
+                }
+
+                if (!cancellationToken.IsCancellationRequested)
+                {
+                    throw new WebSocketException("O feed de mercado foi encerrado.");
+                }
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                break;
+            }
+            catch (Exception exception) when (
+                exception is WebSocketException or HttpRequestException or IOException or JsonException)
+            {
+                onConnectionStatusChanged($"Feed desconectado · reconectando: {exception.Message}");
+                try
+                {
+                    await Task.Delay(reconnectDelay, cancellationToken);
+                }
+                catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+                {
+                    break;
+                }
+
+                reconnectDelay = TimeSpan.FromSeconds(Math.Min(reconnectDelay.TotalSeconds * 2, 15));
+            }
+        }
+
+        onConnectionStatusChanged(null);
+    }
+
+    public async Task<IReadOnlyList<MarketCard>> GetResolvedMarketsAsync(
+        IEnumerable<string> conditionIds,
+        CancellationToken cancellationToken = default)
+    {
+        var ids = conditionIds
+            .Where(id => !string.IsNullOrWhiteSpace(id))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+        var resolvedMarkets = new List<MarketCard>();
+        foreach (var batch in ids.Chunk(50))
+        {
+            var encodedIds = string.Join("&", batch.Select(id =>
+                $"condition_ids={Uri.EscapeDataString(id)}"));
+            using var document = await GetJsonAsync(
+                $"https://gamma-api.polymarket.com/markets?{encodedIds}",
+                cancellationToken);
+            if (document.RootElement.ValueKind != JsonValueKind.Array)
+            {
+                throw new InvalidDataException("A resposta de resolução da Polymarket veio em um formato inesperado.");
+            }
+
+            resolvedMarkets.AddRange(document.RootElement.EnumerateArray()
+                .Select(ReadResolvedMarket));
+        }
+
+        return resolvedMarkets;
+    }
+
+    private static IEnumerable<MarketCard> ReadEventMarkets(JsonElement eventItem)
+    {
+        if (!eventItem.TryGetProperty("markets", out var markets)
+            || markets.ValueKind != JsonValueKind.Array)
+        {
+            return [];
+        }
+
+        var eventTitle = ReadString(eventItem, "title", "question") ?? "Mercado sem título";
+        var eventSlug = ReadString(eventItem, "slug", "event_slug") ?? "";
+        var imageUrl = ReadString(eventItem, "image", "icon") ?? "";
         return markets.EnumerateArray()
-           .SelectMany(market =>
-           {
-               var name = ReadString(market, "question", "title") ?? "Outcome";
-               var tokenId = ReadString(market, "clobTokenIds", "token_id", "tokenId") ?? "";
-               return new[] { new MarketOutcome { Name = name, TokenId = tokenId, Price = ReadDecimal(market, "lastTradePrice", "price") } };
-           })
-           .ToList();
+            .Select(market => ReadMarketCard(
+                market,
+                eventTitle,
+                eventSlug,
+                imageUrl,
+                ReadDecimal(eventItem, "volume24hr", "volume_24hr", "volume")));
+    }
+
+    private static MarketCard ReadResolvedMarket(JsonElement market) =>
+        ReadMarketCard(
+            market,
+            ReadString(market, "question", "title") ?? "Mercado sem título",
+            ReadString(market, "slug") ?? "",
+            ReadString(market, "image", "icon") ?? "",
+            ReadDecimal(market, "volume24hr", "volume_24hr", "volume"));
+
+    private static MarketCard ReadMarketCard(
+        JsonElement market,
+        string eventTitle,
+        string eventSlug,
+        string eventImageUrl,
+        decimal eventVolume)
+    {
+        var slug = ReadString(market, "slug") ?? eventSlug;
+        var volume = ReadDecimal(market, "volume24hr", "volume_24hr", "volume");
+        if (volume == 0m)
+        {
+            volume = eventVolume;
+        }
+
+        var conditionId = ReadString(market, "conditionId", "condition_id") ?? "";
+        var title = ReadString(market, "question", "title") ?? eventTitle;
+        var timeframe = GetTimeframeLabel(slug);
+        return new MarketCard
+        {
+            MarketId = conditionId,
+            ConditionId = conditionId,
+            EventTitle = eventTitle,
+            Slug = slug,
+            Title = title,
+            ImageUrl = ReadString(market, "image", "icon") ?? eventImageUrl,
+            Volume24h = volume,
+            VolumeLabel = FormatVolume(volume),
+            Category = timeframe.Length > 0 ? $"Cripto · {timeframe}" : "Em alta",
+            TimeframeLabel = timeframe,
+            EndDate = ReadDateTime(market, "endDate", "endDateIso"),
+            IsActive = ReadBoolean(market, "active"),
+            IsClosed = ReadBoolean(market, "closed"),
+            Outcomes = ReadMarketOutcomes(market)
+        };
+    }
+
+    private static List<MarketOutcome> ReadMarketOutcomes(JsonElement market)
+    {
+        var names = ReadStringArray(market, "outcomes");
+        var tokenIds = ReadStringArray(market, "clobTokenIds", "token_ids");
+        var prices = ReadDecimalArray(market, "outcomePrices", "outcome_prices");
+        var outcomes = new List<MarketOutcome>(names.Count);
+        for (var index = 0; index < names.Count; index++)
+        {
+            outcomes.Add(new MarketOutcome
+            {
+                Name = names[index],
+                TokenId = index < tokenIds.Count ? tokenIds[index] : "",
+                Price = index < prices.Count ? prices[index] : 0m,
+                BestBid = ReadDecimal(market, "bestBid", "best_bid"),
+                BestAsk = ReadDecimal(market, "bestAsk", "best_ask")
+            });
+        }
+
+        return outcomes;
+    }
+
+    private static List<string> ReadStringArray(JsonElement item, params string[] names)
+    {
+        var value = ReadArrayValue(item, names);
+        if (value.ValueKind != JsonValueKind.Array)
+        {
+            return [];
+        }
+
+        return value.EnumerateArray()
+            .Where(element => element.ValueKind != JsonValueKind.Null)
+            .Select(element => element.ValueKind == JsonValueKind.String ? element.GetString() ?? "" : element.ToString())
+            .ToList();
+    }
+
+    private static List<decimal> ReadDecimalArray(JsonElement item, params string[] names)
+    {
+        var value = ReadArrayValue(item, names);
+        if (value.ValueKind != JsonValueKind.Array)
+        {
+            return [];
+        }
+
+        return value.EnumerateArray()
+            .Select(element => decimal.TryParse(
+                element.ToString(),
+                NumberStyles.Float,
+                CultureInfo.InvariantCulture,
+                out var parsed) ? parsed : 0m)
+            .ToList();
+    }
+
+    private static JsonElement ReadArrayValue(JsonElement item, IEnumerable<string> names)
+    {
+        foreach (var name in names)
+        {
+            if (!item.TryGetProperty(name, out var value) || value.ValueKind == JsonValueKind.Null)
+            {
+                continue;
+            }
+
+            if (value.ValueKind == JsonValueKind.Array)
+            {
+                return value;
+            }
+
+            if (value.ValueKind == JsonValueKind.String)
+            {
+                using var document = JsonDocument.Parse(value.GetString() ?? "[]");
+                if (document.RootElement.ValueKind == JsonValueKind.Array)
+                {
+                    return document.RootElement.Clone();
+                }
+            }
+        }
+
+        return default;
+    }
+
+    private static List<OrderBookLevel> ReadOrderBookLevels(JsonElement root, string propertyName)
+    {
+        if (!root.TryGetProperty(propertyName, out var levels)
+            || levels.ValueKind != JsonValueKind.Array)
+        {
+            throw new InvalidDataException($"O book público não contém uma lista válida de {propertyName}.");
+        }
+
+        return levels.EnumerateArray()
+            .Select(level => new OrderBookLevel
+            {
+                Price = ReadDecimal(level, "price"),
+                Shares = ReadDecimal(level, "size")
+            })
+            .Where(level => level.Price > 0m && level.Shares > 0m)
+            .ToList();
+    }
+
+    private static async Task ReceiveMarketStreamAsync(
+        ClientWebSocket socket,
+        IReadOnlyDictionary<string, OrderBookState> books,
+        Func<string, MarketOrderBook, Task> onBookUpdated,
+        CancellationToken cancellationToken)
+    {
+        var buffer = new byte[32 * 1024];
+        while (socket.State == WebSocketState.Open && !cancellationToken.IsCancellationRequested)
+        {
+            using var message = new MemoryStream();
+            WebSocketReceiveResult result;
+            do
+            {
+                result = await socket.ReceiveAsync(buffer, cancellationToken);
+                if (result.MessageType == WebSocketMessageType.Close)
+                {
+                    return;
+                }
+
+                if (result.MessageType != WebSocketMessageType.Text
+                    || message.Length + result.Count > 1024 * 1024)
+                {
+                    throw new WebSocketException("A mensagem recebida do feed excede o formato esperado.");
+                }
+
+                message.Write(buffer, 0, result.Count);
+            } while (!result.EndOfMessage);
+
+            var text = Encoding.UTF8.GetString(message.GetBuffer(), 0, (int)message.Length);
+            if (text.Equals("PONG", StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            using var document = JsonDocument.Parse(text, DocumentOptions);
+            var root = document.RootElement;
+            if (root.ValueKind == JsonValueKind.Array)
+            {
+                foreach (var item in root.EnumerateArray())
+                {
+                    await ProcessMarketStreamEventAsync(item, books, onBookUpdated);
+                }
+            }
+            else if (root.ValueKind == JsonValueKind.Object)
+            {
+                await ProcessMarketStreamEventAsync(root, books, onBookUpdated);
+            }
+        }
+    }
+
+    private static async Task ProcessMarketStreamEventAsync(
+        JsonElement message,
+        IReadOnlyDictionary<string, OrderBookState> books,
+        Func<string, MarketOrderBook, Task> onBookUpdated)
+    {
+        var payload = message.TryGetProperty("payload", out var eventPayload)
+                      && eventPayload.ValueKind == JsonValueKind.Object
+            ? eventPayload
+            : message;
+        var eventType = ReadString(message, "event_type", "type") ?? "";
+        if (eventType.Equals("book", StringComparison.OrdinalIgnoreCase))
+        {
+            var assetId = ReadString(payload, "asset_id", "assetId") ?? "";
+            if (books.TryGetValue(assetId, out var book))
+            {
+                book.Replace(payload);
+                await onBookUpdated(assetId, book.ToMarketOrderBook());
+            }
+
+            return;
+        }
+
+        if (eventType.Equals("price_change", StringComparison.OrdinalIgnoreCase)
+            && payload.TryGetProperty("price_changes", out var priceChanges)
+            && priceChanges.ValueKind == JsonValueKind.Array)
+        {
+            foreach (var change in priceChanges.EnumerateArray())
+            {
+                var assetId = ReadString(change, "asset_id", "assetId") ?? "";
+                if (!books.TryGetValue(assetId, out var book))
+                {
+                    continue;
+                }
+
+                book.Apply(change);
+                await onBookUpdated(assetId, book.ToMarketOrderBook());
+            }
+
+            return;
+        }
+
+        if (eventType.Equals("best_bid_ask", StringComparison.OrdinalIgnoreCase))
+        {
+            var assetId = ReadString(payload, "asset_id", "assetId") ?? "";
+            if (books.TryGetValue(assetId, out var book))
+            {
+                book.SetBestPrices(
+                    ReadNullableDecimal(payload, "best_bid") ?? ReadNullableDecimal(payload, "bestBid"),
+                    ReadNullableDecimal(payload, "best_ask") ?? ReadNullableDecimal(payload, "bestAsk"));
+                await onBookUpdated(assetId, book.ToMarketOrderBook());
+            }
+        }
+    }
+
+    private static async Task SendMarketPingsAsync(
+        ClientWebSocket socket,
+        CancellationToken cancellationToken)
+    {
+        using var timer = new PeriodicTimer(TimeSpan.FromSeconds(10));
+        var ping = Encoding.UTF8.GetBytes("PING");
+        while (await timer.WaitForNextTickAsync(cancellationToken))
+        {
+            await socket.SendAsync(ping, WebSocketMessageType.Text, true, cancellationToken);
+        }
+    }
+
+    private static string GetTimeframeLabel(string slug)
+    {
+        foreach (var timeframe in new[] { "5m", "15m", "1h", "4h" })
+        {
+            if (slug.Contains($"-updown-{timeframe}-", StringComparison.OrdinalIgnoreCase))
+            {
+                return timeframe;
+            }
+        }
+
+        return "";
+    }
+
+    private static DateTime? ReadDateTime(JsonElement item, params string[] names)
+    {
+        var text = ReadString(item, names);
+        return DateTimeOffset.TryParse(text, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out var date)
+            ? date.UtcDateTime
+            : null;
     }
 
     private static HttpClient CreateHttpClient()
@@ -563,5 +1004,91 @@ public sealed class PolymarketApiClient
     {
         public static FeeSchedule NoFees => new(true, false, 0m, 1m);
         public static FeeSchedule Unavailable => new(false, false, 0m, 1m);
+    }
+
+    private sealed class OrderBookState
+    {
+        private readonly Dictionary<decimal, decimal> _bids = [];
+        private readonly Dictionary<decimal, decimal> _asks = [];
+        private decimal? _bestBidOverride;
+        private decimal? _bestAskOverride;
+
+        public void Replace(JsonElement book)
+        {
+            _bids.Clear();
+            _asks.Clear();
+            ReadLevels(book, "bids", _bids);
+            ReadLevels(book, "asks", _asks);
+            _bestBidOverride = null;
+            _bestAskOverride = null;
+        }
+
+        public void Apply(JsonElement change)
+        {
+            var price = ReadDecimal(change, "price");
+            var size = ReadDecimal(change, "size");
+            var side = ReadString(change, "side") ?? "";
+            var levels = side.Equals("BUY", StringComparison.OrdinalIgnoreCase)
+                ? _bids
+                : _asks;
+            if (price > 0m)
+            {
+                if (size <= 0m)
+                {
+                    levels.Remove(price);
+                }
+                else
+                {
+                    levels[price] = size;
+                }
+            }
+
+            _bestBidOverride = ReadNullableDecimal(change, "best_bid")
+                               ?? ReadNullableDecimal(change, "bestBid");
+            _bestAskOverride = ReadNullableDecimal(change, "best_ask")
+                               ?? ReadNullableDecimal(change, "bestAsk");
+        }
+
+        public void SetBestPrices(decimal? bestBid, decimal? bestAsk)
+        {
+            _bestBidOverride = bestBid;
+            _bestAskOverride = bestAsk;
+        }
+
+        public MarketOrderBook ToMarketOrderBook() => new()
+        {
+            Bids = _bids
+                .OrderByDescending(level => level.Key)
+                .Select(level => new OrderBookLevel { Price = level.Key, Shares = level.Value })
+                .ToList(),
+            Asks = _asks
+                .OrderBy(level => level.Key)
+                .Select(level => new OrderBookLevel { Price = level.Key, Shares = level.Value })
+                .ToList(),
+            BestBidOverride = _bestBidOverride,
+            BestAskOverride = _bestAskOverride
+        };
+
+        private static void ReadLevels(
+            JsonElement book,
+            string propertyName,
+            IDictionary<decimal, decimal> target)
+        {
+            if (!book.TryGetProperty(propertyName, out var levels)
+                || levels.ValueKind != JsonValueKind.Array)
+            {
+                return;
+            }
+
+            foreach (var level in levels.EnumerateArray())
+            {
+                var price = ReadDecimal(level, "price");
+                var size = ReadDecimal(level, "size");
+                if (price > 0m && size > 0m)
+                {
+                    target[price] = size;
+                }
+            }
+        }
     }
 }

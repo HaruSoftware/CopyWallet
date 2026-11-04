@@ -7,18 +7,65 @@ namespace WalletCopy;
 public partial class CopyTradeDialog : Window
 {
     private readonly WalletTrade _trade;
+    private readonly bool _hasLiveCredentials;
 
     public CopyTradeDraft? Draft { get; private set; }
 
-    public CopyTradeDialog(WalletTrade trade)
+    public CopyTradeDialog(WalletTrade trade, bool hasLiveCredentials = false)
     {
         InitializeComponent();
         _trade = trade;
+        _hasLiveCredentials = hasLiveCredentials;
+
         MarketText.Text = $"{trade.MarketTitle}\n{trade.WalletLabel}";
         AutomaticSummary.Text = $"{trade.SideLabel} · {trade.OutcomePriceLabel} · {trade.SharesLabel} · {trade.AmountLabel}";
         SizeInput.Text = trade.Size.ToString("0.####", CultureInfo.InvariantCulture);
         PriceInput.Text = trade.Price.ToString("0.####", CultureInfo.InvariantCulture);
         OrderTypeInput.SelectedIndex = 0;
+
+        if (!hasLiveCredentials)
+        {
+            PaperExecutionMode.IsChecked = true;
+            RealExecutionMode.IsEnabled = false;
+            RealExecutionMode.ToolTip = "Configure suas credenciais na aba Configurações para habilitar a execução real.";
+        }
+
+        UpdateExecutionWarning();
+    }
+
+    private void ExecutionTarget_Changed(object sender, RoutedEventArgs e)
+    {
+        if (!IsInitialized)
+        {
+            return;
+        }
+
+        UpdateExecutionWarning();
+    }
+
+    private void UpdateExecutionWarning()
+    {
+        if (RealExecutionMode.IsChecked == true)
+        {
+            if (!_hasLiveCredentials)
+            {
+                ExecutionWarningText.Text = "Aviso: Credenciais de trading não configuradas. Acesse a página Configurações para conectar sua conta Polymarket.";
+                ValidationText.Text = "Necessário configurar credenciais antes de enviar ordens reais.";
+                ConfirmButton.IsEnabled = false;
+            }
+            else
+            {
+                ExecutionWarningText.Text = "Execução Real: Esta ordem será assinada com sua chave e enviada ao livro de ofertas da Polymarket (Polygon 137). Certifique-se de possuir saldo USDC.e ou pUSD.";
+                ValidationText.Text = "";
+                ConfirmButton.IsEnabled = true;
+            }
+        }
+        else
+        {
+            ExecutionWarningText.Text = "Modo Simulação: A ordem será registrada localmente no terminal Paper Trading, sem envolver fundos reais.";
+            ValidationText.Text = "";
+            ConfirmButton.IsEnabled = true;
+        }
     }
 
     private void Mode_Changed(object sender, RoutedEventArgs e)
@@ -35,18 +82,28 @@ public partial class CopyTradeDialog : Window
 
     private void Confirm_Click(object sender, RoutedEventArgs e)
     {
+        var isReal = RealExecutionMode.IsChecked == true;
+
+        if (isReal && !_hasLiveCredentials)
+        {
+            ValidationText.Text = "Configure suas credenciais na aba Configurações antes de enviar ordens reais.";
+            return;
+        }
+
         if (AutomaticMode.IsChecked == true)
         {
             Draft = new CopyTradeDraft
             {
                 Mode = "Automatico",
+                ExecutionTarget = isReal ? "Real" : "Paper",
                 Position = _trade.Outcome,
                 Side = _trade.Side,
                 OrderType = "FOK",
                 TokenId = _trade.TokenId,
                 ConditionId = _trade.ConditionId,
                 Size = _trade.Size,
-                Price = _trade.Price
+                Price = _trade.Price,
+                MaxSlippagePercent = 1.5m
             };
             DialogResult = true;
             return;
@@ -76,6 +133,7 @@ public partial class CopyTradeDialog : Window
         Draft = new CopyTradeDraft
         {
             Mode = "Manual",
+            ExecutionTarget = isReal ? "Real" : "Paper",
             Position = UpPosition.IsChecked == true ? "Up" : "Down",
             Side = _trade.Side,
             OrderType = (OrderTypeInput.SelectedValue as string) ?? "FOK",

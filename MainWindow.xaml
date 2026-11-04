@@ -67,12 +67,12 @@
                             CornerRadius="12" Padding="12">
                         <StackPanel>
                             <StackPanel Orientation="Horizontal">
-                                <Ellipse Width="7" Height="7" Fill="{DynamicResource ThemeAccent}" Margin="0,0,8,0"/>
-                                <TextBlock Text="SOMENTE LEITURA" FontSize="9" FontWeight="Bold"
+                                <Ellipse x:Name="SidebarModeDot" Width="7" Height="7" Fill="{DynamicResource ThemeAccent}" Margin="0,0,8,0"/>
+                                <TextBlock x:Name="SidebarModeTitle" Text="MODO CONSULTA / PAPER" FontSize="9" FontWeight="Bold"
                                            Foreground="{DynamicResource ThemeAccent}"/>
                             </StackPanel>
                             <TextBlock Text="Acompanhamento público. Nenhuma ordem será enviada."
-                                       FontSize="10" Foreground="{DynamicResource ThemeSecondary}" TextWrapping="Wrap"
+                                       x:Name="SidebarModeSubtitle" FontSize="10" Foreground="{DynamicResource ThemeSecondary}" TextWrapping="Wrap"
                                        Margin="0,8,0,0" LineHeight="16"/>
                         </StackPanel>
                     </Border>

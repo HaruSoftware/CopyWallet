@@ -4,11 +4,87 @@
              xmlns:ui="http://schemas.modernwpf.com/2019"
              Background="Transparent" FontFamily="Arial">
     <ScrollViewer VerticalScrollBarVisibility="Auto">
-        <StackPanel Margin="28,25,28,30" MaxWidth="720">
+        <StackPanel Margin="28,25,28,30" MaxWidth="760">
             <TextBlock Text="Configurações" FontSize="27" FontWeight="Bold"/>
-            <TextBlock Text="Personalize a aparência do Wallet Copy. As preferências ficam salvas localmente."
+            <TextBlock Text="Gerencie preferências de interface e credenciais de trading da Polymarket."
                        Foreground="{DynamicResource ThemeSecondary}" FontSize="13" Margin="0,5,0,20"
                        TextWrapping="Wrap"/>
+
+            <!-- Seção: Carteira de Execução Real -->
+            <Border Background="{DynamicResource ThemePanel}" BorderBrush="{DynamicResource ThemeBorder}"
+                    BorderThickness="1" CornerRadius="14" Padding="20" Margin="0,0,0,18">
+                <StackPanel>
+                    <TextBlock Text="Carteira de Execução Real (Polymarket CLOB)" FontSize="16" FontWeight="SemiBold"/>
+                    <TextBlock Text="Conecte sua conta para assinar e submeter ordens reais de cópia diretamente ao livro da Polymarket."
+                               Foreground="{DynamicResource ThemeSecondary}" FontSize="11"
+                               Margin="0,4,0,16" TextWrapping="Wrap"/>
+
+                    <!-- Card de Instrução -->
+                    <Border Background="{DynamicResource ThemeControl}" CornerRadius="10" Padding="14,12" Margin="0,0,0,16">
+                        <StackPanel>
+                            <TextBlock Text="Como obter seus dados na Polymarket:" FontWeight="Bold" FontSize="11" Foreground="{DynamicResource ThemeAccent}"/>
+                            <TextBlock Text="• Se sua conta foi criada por E-mail ou Google: acesse polymarket.com, vá em Configurações (Settings) e exporte sua Chave Privada (Export Private Key). Cole a chave abaixo e insira o endereço de perfil onde ficam seus depósitos."
+                                       FontSize="11" Foreground="{DynamicResource ThemeMuted}" TextWrapping="Wrap" Margin="0,4,0,0"/>
+                            <TextBlock Text="• Se utiliza MetaMask/Rabby diretamente: selecione 'EOA Direto' e informe sua chave privada. O endereço será derivado automaticamente."
+                                       FontSize="11" Foreground="{DynamicResource ThemeMuted}" TextWrapping="Wrap" Margin="0,4,0,0"/>
+                            <TextBlock Text="🔒 Segurança DPAPI: Sua chave privada é armazenada com criptografia de ponta a ponta no seu perfil do Windows (ProtectedData) e nunca é enviada a nenhum servidor além de assinar transações locais."
+                                       FontSize="10" Foreground="{DynamicResource ThemeSecondary}" FontWeight="SemiBold" TextWrapping="Wrap" Margin="0,6,0,0"/>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Status de Conexão -->
+                    <Border x:Name="ConnectionStatusCard" Background="{DynamicResource ThemePanelRaised}"
+                            CornerRadius="10" Padding="14,10" Margin="0,0,0,16">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel>
+                                <StackPanel Orientation="Horizontal">
+                                    <Ellipse x:Name="StatusDot" Width="8" Height="8" Fill="{DynamicResource ThemeMuted}" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                                    <TextBlock x:Name="StatusTitle" Text="Desconectado · Nenhuma carteira vinculada" FontWeight="SemiBold" FontSize="12"/>
+                                </StackPanel>
+                                <TextBlock x:Name="StatusDetails" Text="Informe sua chave privada para habilitar a execução real de trades."
+                                           FontSize="11" Foreground="{DynamicResource ThemeSecondary}" Margin="16,3,0,0" TextWrapping="Wrap"/>
+                            </StackPanel>
+                            <Button x:Name="DisconnectButton" Grid.Column="1" Content="Desconectar"
+                                    Visibility="Collapsed" Click="Disconnect_Click" Margin="10,0,0,0"
+                                    Height="32" Padding="12,0"/>
+                        </Grid>
+                    </Border>
+
+                    <!-- Formulário de Credenciais -->
+                    <StackPanel x:Name="CredentialsFormPanel">
+                        <TextBlock Text="TIPO DE CONTA POLYMARKET" FontSize="9" FontWeight="Bold" Foreground="{DynamicResource ThemeSecondary}"/>
+                        <ComboBox x:Name="WalletTypeSelector" Height="38" Margin="0,6,0,14" SelectedValuePath="Tag" SelectionChanged="WalletTypeSelector_SelectionChanged">
+                            <ComboBoxItem Tag="PolymarketProxy" Content="Conta por E-mail / Google (Polymarket Proxy / Magic Link)" IsSelected="True"/>
+                            <ComboBoxItem Tag="Eoa" Content="EOA Direto (MetaMask / Rabby / Chave Própria)"/>
+                            <ComboBoxItem Tag="GnosisSafe" Content="Gnosis Safe (Multisig / Safe)"/>
+                        </ComboBox>
+
+                        <TextBlock Text="CHAVE PRIVADA (HEX)" FontSize="9" FontWeight="Bold" Foreground="{DynamicResource ThemeSecondary}"/>
+                        <PasswordBox x:Name="PrivateKeyBox" Height="38" Margin="0,6,0,14" Padding="10,0" VerticalContentAlignment="Center"
+                                     ToolTip="Chave privada exportada da Polymarket ou MetaMask (0x...)"/>
+
+                        <StackPanel x:Name="FunderAddressPanel">
+                            <TextBlock Text="ENDEREÇO DA CONTA POLYMARKET (ONDE ESTÃO OS FUNDOS / PERFIL)" FontSize="9" FontWeight="Bold" Foreground="{DynamicResource ThemeSecondary}"/>
+                            <TextBox x:Name="FunderAddressBox" Height="38" Margin="0,6,0,14" Padding="10,0" VerticalContentAlignment="Center"
+                                     ToolTip="Endereço de depósito ou perfil exibido na Polymarket (0x...)"/>
+                        </StackPanel>
+
+                        <TextBlock x:Name="CredentialsErrorText" Foreground="{DynamicResource ThemeError}" FontSize="11" Margin="0,0,0,10" TextWrapping="Wrap"/>
+
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,4,0,0">
+                            <Button x:Name="ConnectButton" Content="Conectar e Gerar Chaves CLOB" Background="{DynamicResource ThemeAccent}"
+                                    Foreground="{DynamicResource ThemeAccentText}" FontWeight="SemiBold"
+                                    Height="38" Padding="18,0" Click="Connect_Click"/>
+                        </StackPanel>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <!-- Seção: Aparência -->
             <Border Background="{DynamicResource ThemePanel}" BorderBrush="{DynamicResource ThemeBorder}"
                     BorderThickness="1" CornerRadius="14" Padding="18">
                 <StackPanel>
@@ -37,8 +113,9 @@
                     </Grid>
                 </StackPanel>
             </Border>
-            <TextBlock Text="As configurações são armazenadas em %APPDATA%\WalletCopy\settings.json."
-                       Foreground="{DynamicResource ThemeDim}" FontSize="10" Margin="3,12,0,0"/>
+
+            <TextBlock Text="As configurações são armazenadas em %APPDATA%\WalletCopy\settings.json e credenciais em %APPDATA%\WalletCopy\credentials.dat (DPAPI)."
+                       Foreground="{DynamicResource ThemeDim}" FontSize="10" Margin="3,12,0,0" TextWrapping="Wrap"/>
         </StackPanel>
     </ScrollViewer>
 </UserControl>

@@ -6,55 +6,62 @@
     <ScrollViewer VerticalScrollBarVisibility="Auto">
         <StackPanel Margin="28,25,28,30">
             <TextBlock Text="Trades copiados" FontSize="27" FontWeight="Bold"/>
-            <TextBlock Text="Registro local dos trades marcados para cópia. O envio de ordens ainda está desativado."
-                       Foreground="{DynamicResource ThemeSecondary}" FontSize="12" Margin="0,5,0,20"/>
+            <TextBlock Text="Histórico de ordens reais submetidas ao CLOB da Polymarket e registros de simulação."
+                       Foreground="{DynamicResource ThemeSecondary}" FontSize="12" Margin="0,5,0,16"/>
+
             <Border Background="{DynamicResource ThemeSuccessBackground}" BorderBrush="{DynamicResource ThemeBorderStrong}"
-                    BorderThickness="1" CornerRadius="12" Padding="12,9" HorizontalAlignment="Left">
-                <StackPanel Orientation="Horizontal">
-                    <Ellipse Width="6" Height="6" Fill="{DynamicResource ThemeAccent}" Margin="0,0,8,0"/>
-                    <TextBlock Text="SIMULAÇÃO LOCAL · NENHUMA ORDEM SERÁ ENVIADA" FontSize="9"
+                    BorderThickness="1" CornerRadius="12" Padding="14,9" HorizontalAlignment="Left" Margin="0,0,0,16">
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <Ellipse x:Name="ExecutionIndicatorDot" Width="7" Height="7" Fill="{DynamicResource ThemeAccent}" Margin="0,0,9,0"/>
+                    <TextBlock x:Name="ExecutionIndicatorText" Text="EXECUÇÃO POLYMARKET CLOB DISPONÍVEL" FontSize="10"
                                FontWeight="Bold" Foreground="{DynamicResource ThemeAccent}"/>
                 </StackPanel>
             </Border>
+
             <Border Background="{DynamicResource ThemePanel}" BorderBrush="{DynamicResource ThemeBorder}"
-                    BorderThickness="1" CornerRadius="14" Padding="10" Margin="0,18,0,0">
+                    BorderThickness="1" CornerRadius="14" Padding="12" Margin="0,6,0,0">
                 <Grid>
                     <ItemsControl x:Name="CopiedTradesList">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate DataType="{x:Type models:CopyTradeRecord}">
                                 <Border Background="{DynamicResource ThemePanelRaised}" CornerRadius="10"
-                                        Padding="14,11" Margin="0,0,0,8">
+                                        Padding="16,13" Margin="0,0,0,10" BorderBrush="{DynamicResource ThemeBorder}" BorderThickness="1">
                                     <Grid>
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="*"/>
                                             <ColumnDefinition Width="Auto"/>
                                         </Grid.ColumnDefinitions>
+
                                         <StackPanel>
-                                            <TextBlock Text="{Binding MarketTitle}" FontSize="13"
-                                                       FontWeight="SemiBold" TextWrapping="Wrap"/>
-                                            <TextBlock Text="{Binding TradeLabel}" FontSize="11"
-                                                       Foreground="{DynamicResource ThemeAccent}" Margin="0,5,0,0"/>
-                                            <TextBlock Text="{Binding CopyDetailsLabel}" FontSize="10"
-                                                       Foreground="{DynamicResource ThemeMuted}" Margin="0,4,0,0"/>
-                                            <TextBlock Text="{Binding WalletLabel}" FontSize="10"
-                                                       Foreground="{DynamicResource ThemeMuted}" Margin="0,3,0,0"/>
+                                            <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
+                                                <Border Background="{DynamicResource ThemeControl}" CornerRadius="5" Padding="6,2" Margin="0,0,8,0">
+                                                    <TextBlock Text="{Binding ExecutionBadgeLabel}" FontSize="9" FontWeight="Bold" Foreground="{DynamicResource ThemeAccent}"/>
+                                                </Border>
+                                                <TextBlock Text="{Binding WalletLabel}" FontSize="10" Foreground="{DynamicResource ThemeMuted}" VerticalAlignment="Center"/>
+                                            </StackPanel>
+
+                                            <TextBlock Text="{Binding MarketTitle}" FontSize="14" FontWeight="SemiBold" TextWrapping="Wrap"/>
+                                            <TextBlock Text="{Binding TradeLabel}" FontSize="12" Foreground="{DynamicResource ThemeAccent}" Margin="0,5,0,0" FontWeight="SemiBold"/>
+                                            <TextBlock Text="{Binding CopyDetailsLabel}" FontSize="11" Foreground="{DynamicResource ThemeMuted}" Margin="0,4,0,0"/>
+
+                                            <TextBlock Text="{Binding ErrorMessage}" Visibility="{Binding ErrorMessage, Converter={x:Null}}"
+                                                       FontSize="10" Foreground="{DynamicResource ThemeError}" Margin="0,4,0,0" TextWrapping="Wrap"/>
                                         </StackPanel>
-                                        <StackPanel Grid.Column="1" HorizontalAlignment="Right"
-                                                    VerticalAlignment="Center">
-                                            <TextBlock Text="{Binding AmountLabel}" FontSize="14"
-                                                       FontWeight="SemiBold" HorizontalAlignment="Right"/>
-                                            <TextBlock Text="{Binding CopiedAtLabel}" FontSize="10"
-                                                       Foreground="{DynamicResource ThemeMuted}"
-                                                       HorizontalAlignment="Right" Margin="0,4,0,0"/>
+
+                                        <StackPanel Grid.Column="1" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="14,0,0,0">
+                                            <TextBlock Text="{Binding AmountLabel}" FontSize="16" FontWeight="Bold" HorizontalAlignment="Right"/>
+                                            <TextBlock Text="{Binding ExecutionStatus}" FontSize="11" FontWeight="SemiBold" Foreground="{DynamicResource ThemeAccent}" HorizontalAlignment="Right" Margin="0,3,0,0"/>
+                                            <TextBlock Text="{Binding CopiedAtLabel}" FontSize="10" Foreground="{DynamicResource ThemeMuted}" HorizontalAlignment="Right" Margin="0,4,0,0"/>
                                         </StackPanel>
                                     </Grid>
                                 </Border>
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
-                    <TextBlock x:Name="EmptyState" Text="Nenhum trade foi marcado para cópia ainda."
+
+                    <TextBlock x:Name="EmptyState" Text="Nenhum trade copiado ainda."
                                Foreground="{DynamicResource ThemeSecondary}" FontSize="13"
-                               HorizontalAlignment="Center" Margin="20"/>
+                               HorizontalAlignment="Center" Margin="30"/>
                 </Grid>
             </Border>
         </StackPanel>

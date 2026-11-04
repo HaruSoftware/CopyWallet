@@ -1,7 +1,7 @@
 <Window x:Class="WalletCopy.CopyTradeDialog"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Copiar trade" Width="470" SizeToContent="Height"
+        Title="Copiar trade" Width="490" SizeToContent="Height"
         WindowStartupLocation="CenterOwner" ResizeMode="NoResize"
         Icon="{DynamicResource AppIcon}"
         Background="{DynamicResource ThemeBackground}"
@@ -11,21 +11,30 @@
         <StackPanel>
             <TextBlock Text="Copiar trade" FontSize="21" FontWeight="Bold"/>
             <TextBlock x:Name="MarketText" FontSize="12" Foreground="{DynamicResource ThemeSecondary}"
-                       TextWrapping="Wrap" Margin="0,5,0,18"/>
+                       TextWrapping="Wrap" Margin="0,5,0,16"/>
+
+            <TextBlock Text="DESTINO DA EXECUÇÃO" FontSize="9" FontWeight="Bold"
+                       Foreground="{DynamicResource ThemeSecondary}"/>
+            <StackPanel Orientation="Horizontal" Margin="0,8,0,16">
+                <RadioButton x:Name="RealExecutionMode" Content="Polymarket Real (CLOB)" IsChecked="True"
+                             GroupName="ExecutionTarget" Checked="ExecutionTarget_Changed" Margin="0,0,24,0"/>
+                <RadioButton x:Name="PaperExecutionMode" Content="Simulação (Paper)"
+                             GroupName="ExecutionTarget" Checked="ExecutionTarget_Changed"/>
+            </StackPanel>
 
             <TextBlock Text="MODO DE CÓPIA" FontSize="9" FontWeight="Bold"
                        Foreground="{DynamicResource ThemeSecondary}"/>
-            <StackPanel Orientation="Horizontal" Margin="0,8,0,18">
-                <RadioButton x:Name="AutomaticMode" Content="Automático" IsChecked="True"
+            <StackPanel Orientation="Horizontal" Margin="0,8,0,16">
+                <RadioButton x:Name="AutomaticMode" Content="Automático (Replicar)" IsChecked="True"
                              GroupName="CopyMode" Checked="Mode_Changed" Margin="0,0,24,0"/>
-                <RadioButton x:Name="ManualMode" Content="Manual"
+                <RadioButton x:Name="ManualMode" Content="Manual (Ajustar)"
                              GroupName="CopyMode" Checked="Mode_Changed"/>
             </StackPanel>
 
             <Border x:Name="AutomaticPanel" Background="{DynamicResource ThemeControl}"
                     CornerRadius="9" Padding="12" Margin="0,0,0,16">
                 <StackPanel>
-                    <TextBlock Text="Usa a posição, preço e tamanho observados no trade."
+                    <TextBlock Text="Usa a posição, preço e tamanho observados no trade original."
                                FontSize="11" Foreground="{DynamicResource ThemeMuted}" TextWrapping="Wrap"/>
                     <TextBlock x:Name="AutomaticSummary" FontSize="11"
                                Foreground="{DynamicResource ThemeAccent}" Margin="0,6,0,0"/>
@@ -36,9 +45,9 @@
                 <TextBlock Text="POSIÇÃO" FontSize="9" FontWeight="Bold"
                            Foreground="{DynamicResource ThemeSecondary}"/>
                 <StackPanel Orientation="Horizontal" Margin="0,8,0,14">
-                    <RadioButton x:Name="UpPosition" Content="Up" IsChecked="True"
+                    <RadioButton x:Name="UpPosition" Content="Up / Yes" IsChecked="True"
                                  GroupName="Position" Margin="0,0,24,0"/>
-                    <RadioButton x:Name="DownPosition" Content="Down"
+                    <RadioButton x:Name="DownPosition" Content="Down / No"
                                  GroupName="Position"/>
                 </StackPanel>
                 <Grid>
@@ -84,26 +93,29 @@
                                    Foreground="{DynamicResource ThemeSecondary}"/>
                         <TextBox x:Name="SlippageInput" Height="38" Margin="0,7,0,0"
                                  Padding="10,0" VerticalContentAlignment="Center"
-                                 Text="1"/>
+                                 Text="1.5"/>
                     </StackPanel>
                 </Grid>
-                <TextBlock Text="Use valores decimais. O tamanho e o preço serão apenas registrados localmente nesta etapa."
+                <TextBlock Text="Valores decimais. A ordem será enviada conforme o destino selecionado."
                            FontSize="10" Foreground="{DynamicResource ThemeMuted}"
                            TextWrapping="Wrap" Margin="0,10,0,0"/>
             </StackPanel>
 
             <TextBlock x:Name="ValidationText" Foreground="{DynamicResource ThemeError}"
-                       FontSize="10" TextWrapping="Wrap" Margin="0,12,0,0"/>
-            <Border Background="{DynamicResource ThemePending}" Opacity="0.16"
-                    CornerRadius="8" Padding="10,8" Margin="0,12,0,0">
-                <TextBlock Text="Preparação local: nenhuma assinatura ou ordem será enviada."
-                           FontSize="10" Foreground="{DynamicResource ThemePending}"
+                       FontSize="11" FontWeight="SemiBold" TextWrapping="Wrap" Margin="0,10,0,0"/>
+
+            <Border x:Name="ExecutionWarningBox" Background="{DynamicResource ThemePending}" Opacity="0.16"
+                    CornerRadius="8" Padding="12,10" Margin="0,12,0,0">
+                <TextBlock x:Name="ExecutionWarningText"
+                           Text="Execução Real: a ordem será assinada com sua chave privada e submetida à Polymarket via CLOB."
+                           FontSize="11" Foreground="{DynamicResource ThemePending}"
                            TextWrapping="Wrap"/>
             </Border>
+
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,18,0,0">
                 <Button Content="Cancelar" Click="Cancel_Click" Margin="0,0,8,0"/>
-                <Button Content="Confirmar cópia" Background="{DynamicResource ThemeAccent}"
-                        Foreground="{DynamicResource ThemeAccentText}" Click="Confirm_Click"/>
+                <Button x:Name="ConfirmButton" Content="Confirmar cópia" Background="{DynamicResource ThemeAccent}"
+                        Foreground="{DynamicResource ThemeAccentText}" Click="Confirm_Click" FontWeight="SemiBold"/>
             </StackPanel>
         </StackPanel>
     </Border>

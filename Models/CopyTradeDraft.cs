@@ -3,6 +3,7 @@ namespace WalletCopy.Models;
 public sealed class CopyTradeDraft
 {
     public string Mode { get; init; } = "Automatico";
+    public string ExecutionTarget { get; init; } = "Real"; // "Real" (Polymarket CLOB) ou "Paper" (Simulado)
     public string Position { get; init; } = "";
     public string Side { get; init; } = "BUY";
     public string OrderType { get; init; } = "FOK";
