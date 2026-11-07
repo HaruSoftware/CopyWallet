@@ -20,6 +20,7 @@ public sealed class WalletTrade
     public decimal Size { get; init; }
     public decimal UsdcSize { get; init; }
     public bool IsTaker { get; init; }
+    public string ExecutionRoleLabel => IsTaker ? "TAKER" : "MAKER";
     public bool FeeScheduleAvailable { get; init; }
     public bool FeesEnabled { get; init; }
     public decimal TakerFeeRate { get; init; }
@@ -73,6 +74,7 @@ public sealed class WalletTrade
         }
     }
     public string TimeLabel => Timestamp == default ? "Agora" : Timestamp.ToLocalTime().ToString("HH:mm:ss");
+    public string TimestampLabel => Timestamp == default ? "Horário indisponível" : Timestamp.ToLocalTime().ToString("dd/MM/yyyy HH:mm:ss");
     public string TimeAgoLabel
     {
         get

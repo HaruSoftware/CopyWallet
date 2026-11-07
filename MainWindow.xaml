@@ -100,6 +100,15 @@
                             <TextBlock Text="Carteiras" VerticalAlignment="Center"/>
                         </StackPanel>
                     </Button>
+                    <Button x:Name="WalletAnalysisNavigation" Style="{StaticResource NavigationButton}"
+                            Tag="WalletAnalysis" Click="Navigate_Click">
+                        <StackPanel Orientation="Horizontal">
+                            <fa:ImageAwesome Icon="Search" Width="16" Height="16"
+                                             Foreground="{Binding RelativeSource={RelativeSource AncestorType=Button}, Path=Foreground}"
+                                             Margin="0,0,12,0"/>
+                            <TextBlock Text="Análise de carteira" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
                     <Button x:Name="MarketsNavigation" Style="{StaticResource NavigationButton}" Visibility="Collapsed"
                             Tag="Markets" Click="Navigate_Click">
                         <StackPanel Orientation="Horizontal">

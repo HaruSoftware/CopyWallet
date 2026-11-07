@@ -27,6 +27,7 @@ public partial class MainWindow : Window
     private readonly ObservableCollection<TrackedWallet> _trackedWallets = [];
     private readonly DashboardPage _dashboardPage = new();
     private readonly WalletsPage _walletsPage = new();
+    private readonly WalletAnalysisPage _walletAnalysisPage = new();
     private readonly MarketsPage _marketsPage = new();
     private readonly PaperTradingPage _paperTradingPage;
     private readonly CopyTradesPage _copyTradesPage = new();
@@ -55,6 +56,7 @@ public partial class MainWindow : Window
         _walletsPage.AddWalletRequested += AddWalletRequested;
         _walletsPage.OwnWalletRequested += OwnWalletRequested;
         _walletsPage.WalletSelected += WalletSelected;
+        _walletAnalysisPage.AnalysisRequested += WalletAnalysisRequested;
         _walletsPage.WalletRemoved += WalletRemoved;
         _walletsPage.CopyTradeRequested += CopyTradeRequested;
         _walletsPage.CopyAllTradesRequested += CopyAllTradesRequested;
@@ -156,6 +158,7 @@ public partial class MainWindow : Window
         (string Title, UserControl Content) navigation = page switch
         {
             "Wallets" => ("Carteiras", _walletsPage),
+            "WalletAnalysis" => ("Análise de carteira", _walletAnalysisPage),
             "Markets" => ("Mercados", _marketsPage),
             "PaperTrading" => ("Terminal simulado", _paperTradingPage),
             "CopyTrades" => ("Trades copiados", _copyTradesPage),
@@ -167,6 +170,7 @@ public partial class MainWindow : Window
         PageHost.Content = navigation.Content;
         SetNavigationState(DashboardNavigation, page == "Dashboard");
         SetNavigationState(WalletsNavigation, page == "Wallets");
+        SetNavigationState(WalletAnalysisNavigation, page == "WalletAnalysis");
         SetNavigationState(MarketsNavigation, page == "Markets");
         SetNavigationState(PaperTradingNavigation, page == "PaperTrading");
         SetNavigationState(CopyTradesNavigation, page == "CopyTrades");
@@ -299,6 +303,35 @@ public partial class MainWindow : Window
         UpdateWalletPage();
         await SaveSettingsAsync();
         await RefreshDataAsync();
+    }
+
+    private async void WalletAnalysisRequested(object? sender, string address)
+    {
+        if (!IsValidWalletAddress(address))
+        {
+            const string message = "Informe um endereço público válido (0x seguido por 40 caracteres hexadecimais).";
+            _walletAnalysisPage.SetError(message);
+            NotificationPopup.ShowError(message);
+            return;
+        }
+
+        _walletAnalysisPage.SetLoading(address);
+        try
+        {
+            var trades = await _apiClient.GetRecentTradesAsync(address);
+            _walletAnalysisPage.SetAnalysis(address, trades);
+        }
+        catch (Exception exception) when (
+            exception is HttpRequestException
+            or TaskCanceledException
+            or System.Text.Json.JsonException
+            or InvalidDataException
+            or IOException)
+        {
+            var message = $"Não foi possível analisar a carteira: {exception.Message}";
+            _walletAnalysisPage.SetError(message);
+            NotificationPopup.ShowError(message);
+        }
     }
 
     private async void DashboardWalletFilterChanged(object? sender, string address)
@@ -918,6 +951,9 @@ public partial class MainWindow : Window
     {
         _walletsPage.SetWallets(_trackedWallets, _focusedWalletAddress, _ownWalletAddress);
         _dashboardPage.SetWallets(_trackedWallets, _ownWalletAddress, _focusedWalletAddress);
+        _walletAnalysisPage.SetWallets(
+            _trackedWallets.Select(wallet => wallet.Address).Append(_ownWalletAddress),
+            _focusedWalletAddress);
     }
 
     private static bool IsValidWalletAddress(string? address)

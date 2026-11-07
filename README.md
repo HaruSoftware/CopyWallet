@@ -4,6 +4,8 @@ Aplicativo desktop WPF (.NET 8) para monitoramento de carteiras da Polymarket e 
 
 A interface utiliza [ModernWpfUI](https://github.com/Kinnara/ModernWpf), com temas claro/escuro integrados ao Windows e visual inspirado no terminal da Polymarket. As páginas **Visão geral**, **Carteiras**, **Mercados**, **Terminal simulado**, **Trades copiados** e **Configurações** são navegadas de forma independente com notificações em tempo real.
 
+A página **Análise de carteira** lista as carteiras acompanhadas e a carteira própria, consulta até 30 trades recentes e estima sinais de estilo (como giro rápido, convicção, diversificação ou possível automação). O relatório inclui o valor bruto das compras e estima resultado realizado por FIFO apenas quando encontra compras e vendas pareáveis do mesmo token na amostra; o retorno percentual usa somente o custo pareado, não o aporte total da carteira. Operações iniciadas antes dos 30 trades e taxas indisponíveis podem deixar o resultado incompleto. O período exibido vai do trade mais antigo ao mais recente da amostra. Também permite pesquisar qualquer endereço público sem adicioná-lo nem salvá-lo. Essas classificações são indicativas e não comprovam intenção, automação, margem ou rentabilidade.
+
 ---
 
 ## Recursos e Funcionalidades
