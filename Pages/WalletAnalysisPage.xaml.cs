@@ -80,7 +80,14 @@ public partial class WalletAnalysisPage : UserControl
                 : analysis.RealizedResult < 0m
                     ? "ThemeError"
                     : "ThemeSecondary";
+        var resultBackground = !analysis.HasRealizedResult || analysis.RealizedResult == 0m
+            ? "ThemeBackground"
+            : analysis.RealizedResult > 0m
+                ? "ThemeSuccessBackground"
+                : "ThemeErrorBackground";
+        ProfitabilityCard.SetResourceReference(Border.BackgroundProperty, resultBackground);
         RealizedResultText.SetResourceReference(TextBlock.ForegroundProperty, resultColor);
+        AverageResultText.SetResourceReference(TextBlock.ForegroundProperty, resultColor);
         ReturnOnInvestmentText.SetResourceReference(TextBlock.ForegroundProperty, resultColor);
         ProfitabilityStatusText.SetResourceReference(TextBlock.ForegroundProperty, resultColor);
         AnalysisPanel.Visibility = Visibility.Visible;
