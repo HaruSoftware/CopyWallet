@@ -30,6 +30,7 @@ public partial class MainWindow : Window
     private readonly WalletAnalysisPage _walletAnalysisPage = new();
     private readonly MarketsPage _marketsPage = new();
     private readonly PaperTradingPage _paperTradingPage;
+    private readonly ArbitrageMonitorPage _arbitrageMonitorPage;
     private readonly CopyTradesPage _copyTradesPage = new();
     private readonly SettingsPage _settingsPage = new();
     private readonly PolymarketClobClient _clobClient = new();
@@ -51,6 +52,7 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
         _paperTradingPage = new PaperTradingPage(_apiClient);
+        _arbitrageMonitorPage = new ArbitrageMonitorPage(_apiClient);
         _dashboardPage.WalletFilterChanged += DashboardWalletFilterChanged;
         _dashboardPage.CopyTradeRequested += CopyTradeRequested;
         _walletsPage.AddWalletRequested += AddWalletRequested;
@@ -69,7 +71,11 @@ public partial class MainWindow : Window
         _settingsPage.CredentialsChanged += SettingsPageCredentialsChanged;
         _refreshTimer.Tick += async (_, _) => await RefreshDataAsync();
         Loaded += MainWindow_Loaded;
-        Closed += (_, _) => _refreshTimer.Stop();
+        Closed += (_, _) =>
+        {
+            _refreshTimer.Stop();
+            _arbitrageMonitorPage.StopMonitoring();
+        };
         NavigateTo("Dashboard");
     }
 
@@ -161,6 +167,7 @@ public partial class MainWindow : Window
             "WalletAnalysis" => ("Análise de carteira", _walletAnalysisPage),
             "Markets" => ("Mercados", _marketsPage),
             "PaperTrading" => ("Terminal simulado", _paperTradingPage),
+            "ArbitrageMonitor" => ("Monitor de book", _arbitrageMonitorPage),
             "CopyTrades" => ("Trades copiados", _copyTradesPage),
             "Settings" => ("Configurações", _settingsPage),
             _ => ("Visão geral", _dashboardPage)
@@ -173,6 +180,7 @@ public partial class MainWindow : Window
         SetNavigationState(WalletAnalysisNavigation, page == "WalletAnalysis");
         SetNavigationState(MarketsNavigation, page == "Markets");
         SetNavigationState(PaperTradingNavigation, page == "PaperTrading");
+        SetNavigationState(ArbitrageNavigation, page == "ArbitrageMonitor");
         SetNavigationState(CopyTradesNavigation, page == "CopyTrades");
         SetNavigationState(SettingsNavigation, page == "Settings");
     }
@@ -735,6 +743,7 @@ public partial class MainWindow : Window
             {
                 _marketsPage.SetMarkets(marketsTask.Result.Markets);
                 _paperTradingPage.SetMarkets(marketsTask.Result.Markets);
+                _arbitrageMonitorPage.SetMarkets(marketsTask.Result.Markets);
             }
             try
             {

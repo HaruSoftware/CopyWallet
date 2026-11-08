@@ -1,0 +1,157 @@
+<UserControl x:Class="WalletCopy.Pages.ArbitrageMonitorPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:models="clr-namespace:WalletCopy.Models"
+             Background="Transparent" FontFamily="Arial">
+    <UserControl.Resources>
+        <Style x:Key="TimeframeTabButton" TargetType="RadioButton">
+            <Setter Property="Background" Value="{DynamicResource ThemeControl}"/>
+            <Setter Property="Foreground" Value="{DynamicResource ThemeSecondary}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource ThemeBorder}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding" Value="14,6"/>
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Margin" Value="0,0,6,0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="RadioButton">
+                        <Border x:Name="border" Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="8" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="{DynamicResource ThemeAccent}"/>
+                                <Setter TargetName="border" Property="BorderBrush" Value="{DynamicResource ThemeAccent}"/>
+                                <Setter Property="Foreground" Value="{DynamicResource ThemeAccentText}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </UserControl.Resources>
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Margin="28,25,28,30">
+            <TextBlock Text="Monitor de discrepâncias" FontSize="26" FontWeight="Bold"/>
+            <TextBlock Text="Acompanhe os melhores bids dos dois resultados e o valor líquido estimado para vender 1 share de cada lado."
+                       Foreground="{DynamicResource ThemeSecondary}" FontSize="12" Margin="0,4,0,16"
+                       TextWrapping="Wrap"/>
+
+            <Grid Margin="0,0,0,14">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <RadioButton Content="5 min" Tag="5m" GroupName="Timeframe"
+                                 Style="{StaticResource TimeframeTabButton}" IsChecked="True"
+                                 Checked="Timeframe_Checked"/>
+                    <RadioButton Content="15 min" Tag="15m" GroupName="Timeframe"
+                                 Style="{StaticResource TimeframeTabButton}" Checked="Timeframe_Checked"/>
+                    <RadioButton Content="1 hora" Tag="1h" GroupName="Timeframe"
+                                 Style="{StaticResource TimeframeTabButton}" Checked="Timeframe_Checked"/>
+                </StackPanel>
+                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                    <TextBlock Text="Meta líquida do par" FontSize="11" Foreground="{DynamicResource ThemeSecondary}"
+                               VerticalAlignment="Center" Margin="0,0,8,0"/>
+                    <TextBox x:Name="TargetInput" Width="72" Height="32" Padding="8,4"
+                             VerticalContentAlignment="Center" TextChanged="TargetInput_TextChanged"/>
+                </StackPanel>
+            </Grid>
+
+            <TextBlock Text="A comparação usa bids executáveis e profundidade do book; as taxas taker atuais do mercado são descontadas. Excedente sobre $1,00 não considera seu custo de aquisição. Nenhuma ordem será enviada."
+                       Foreground="{DynamicResource ThemeMuted}" FontSize="10" Margin="0,0,0,12"
+                       TextWrapping="Wrap"/>
+            <Border Background="{DynamicResource ThemePanelRaised}" BorderBrush="{DynamicResource ThemeBorder}"
+                    BorderThickness="1" CornerRadius="10" Padding="12" Margin="0,0,0,12">
+                <StackPanel Orientation="Horizontal">
+                    <Ellipse x:Name="ConnectionIndicator" Width="7" Height="7"
+                             Fill="{DynamicResource ThemePending}" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                    <TextBlock x:Name="ConnectionStatus" Text="Aguardando mercados…"
+                               FontSize="10" Foreground="{DynamicResource ThemeSecondary}"
+                               VerticalAlignment="Center" TextWrapping="Wrap"/>
+                </StackPanel>
+            </Border>
+            <TextBlock x:Name="TargetValidation" Foreground="{DynamicResource ThemeError}"
+                       FontSize="10" Margin="0,0,0,10" Visibility="Collapsed"/>
+
+            <ItemsControl x:Name="OpportunityList">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate DataType="{x:Type models:MarketOpportunityQuote}">
+                        <Border Background="{DynamicResource ThemePanelRaised}" BorderBrush="{DynamicResource ThemeBorder}"
+                                BorderThickness="1" CornerRadius="12" Padding="16" Margin="0,0,0,10">
+                            <Border.Style>
+                                <Style TargetType="Border">
+                                    <Setter Property="BorderBrush" Value="{DynamicResource ThemeBorder}"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsOpportunity}" Value="True">
+                                            <Setter Property="BorderBrush" Value="{DynamicResource ThemeAccent}"/>
+                                            <Setter Property="BorderThickness" Value="2"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Border.Style>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="2.2*"/>
+                                    <ColumnDefinition Width="1.2*"/>
+                                    <ColumnDefinition Width="1.2*"/>
+                                    <ColumnDefinition Width="1.1*"/>
+                                    <ColumnDefinition Width="1.3*"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel>
+                                    <TextBlock Text="{Binding MarketLabel}" FontSize="9" FontWeight="Bold"
+                                               Foreground="{DynamicResource ThemeAccent}"/>
+                                    <TextBlock Text="{Binding Title}" FontSize="12" FontWeight="SemiBold"
+                                               TextWrapping="Wrap" Margin="0,4,12,0"/>
+                                    <TextBlock Text="{Binding TimeRemainingLabel, StringFormat=Encerra em {0}}"
+                                               FontSize="9" Foreground="{DynamicResource ThemeMuted}" Margin="0,5,0,0"/>
+                                </StackPanel>
+                                <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                    <TextBlock Text="LADO 1 · MELHOR BID" FontSize="8" FontWeight="Bold"
+                                               Foreground="{DynamicResource ThemeMuted}"/>
+                                    <TextBlock Text="{Binding FirstBidLabel}" FontSize="11" Margin="0,5,0,0"
+                                               TextWrapping="Wrap"/>
+                                </StackPanel>
+                                <StackPanel Grid.Column="2" VerticalAlignment="Center">
+                                    <TextBlock Text="LADO 2 · MELHOR BID" FontSize="8" FontWeight="Bold"
+                                               Foreground="{DynamicResource ThemeMuted}"/>
+                                    <TextBlock Text="{Binding SecondBidLabel}" FontSize="11" Margin="0,5,0,0"
+                                               TextWrapping="Wrap"/>
+                                </StackPanel>
+                                <StackPanel Grid.Column="3" VerticalAlignment="Center">
+                                    <TextBlock Text="LÍQUIDO · 1 SHARE/LADO" FontSize="8" FontWeight="Bold"
+                                               Foreground="{DynamicResource ThemeMuted}"/>
+                                    <TextBlock Text="{Binding NetProceedsLabel}" FontSize="16" FontWeight="Bold"
+                                               Margin="0,3,0,0"/>
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="vs. $1,00: " FontSize="9"
+                                                   Foreground="{DynamicResource ThemeSecondary}"/>
+                                        <TextBlock Text="{Binding ExcessLabel}" FontSize="9"
+                                                   Foreground="{DynamicResource ThemeSecondary}"/>
+                                    </StackPanel>
+                                </StackPanel>
+                                <StackPanel Grid.Column="4" VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding StatusLabel}" FontSize="10" FontWeight="Bold"
+                                               Foreground="{DynamicResource ThemeSecondary}" TextWrapping="Wrap"/>
+                                    <TextBlock Text="{Binding TargetLabel}" FontSize="9"
+                                               Foreground="{DynamicResource ThemeMuted}" Margin="0,5,0,0"/>
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <TextBlock x:Name="EmptyState"
+                       Text="Nenhum mercado ativo encontrado para este período."
+                       Foreground="{DynamicResource ThemeSecondary}" FontSize="12" Margin="0,12"
+                       Visibility="Collapsed"/>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

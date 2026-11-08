@@ -16,7 +16,7 @@ public sealed class PolymarketApiClient
     private static readonly TimeSpan MarketCacheDuration = TimeSpan.FromMinutes(1);
     private const string PolygonRpcUrl = "https://polygon-bor-rpc.publicnode.com";
     private const string PusdTokenAddress = "0xC011a7E12a19f7B1f670d46F03B03f3342E82DFB";
-    private static readonly ConcurrentDictionary<string, FeeSchedule> FeeSchedules = new(StringComparer.OrdinalIgnoreCase);
+    private static readonly ConcurrentDictionary<string, MarketFeeSchedule> FeeSchedules = new(StringComparer.OrdinalIgnoreCase);
     private static readonly SemaphoreSlim FeeScheduleSemaphore = new(4);
     private static readonly Uri MarketWebSocketUri = new("wss://ws-subscriptions-clob.polymarket.com/ws/market");
     private readonly SemaphoreSlim _marketCacheSemaphore = new(1, 1);
@@ -88,7 +88,7 @@ public sealed class PolymarketApiClient
                                      && feeScheduleTask.Result.IsAvailable);
             var feeSchedule = isTaker && feeScheduleTasks.TryGetValue(marketSlug, out feeScheduleTask)
                 ? feeScheduleTask.Result
-                : FeeSchedule.NoFees;
+                : MarketFeeSchedule.NoFees;
             var imageUrl = ReadString(
                 item,
                 "icon",
@@ -407,6 +407,11 @@ public sealed class PolymarketApiClient
             Asks = ReadOrderBookLevels(root, "asks")
         };
     }
+
+    public Task<MarketFeeSchedule> GetMarketFeeScheduleAsync(
+        string marketSlug,
+        CancellationToken cancellationToken = default) =>
+        GetFeeScheduleAsync(marketSlug, cancellationToken);
 
     public async Task StreamOrderBooksAsync(
         IEnumerable<string> assetIds,
@@ -903,7 +908,7 @@ public sealed class PolymarketApiClient
         return await JsonDocument.ParseAsync(stream, DocumentOptions, cancellationToken);
     }
 
-    private static async Task<FeeSchedule> GetFeeScheduleAsync(string marketSlug, CancellationToken cancellationToken)
+    private static async Task<MarketFeeSchedule> GetFeeScheduleAsync(string marketSlug, CancellationToken cancellationToken)
     {
         if (FeeSchedules.TryGetValue(marketSlug, out var cachedSchedule))
         {
@@ -923,20 +928,39 @@ public sealed class PolymarketApiClient
                 var uri = $"https://gamma-api.polymarket.com/markets/slug/{Uri.EscapeDataString(marketSlug)}";
                 using var document = await GetJsonAsync(uri, cancellationToken);
                 var root = document.RootElement;
+                var hasFeeFlag = root.TryGetProperty("feesEnabled", out var feeFlagElement)
+                                 && (feeFlagElement.ValueKind is JsonValueKind.True or JsonValueKind.False
+                                     || (feeFlagElement.ValueKind == JsonValueKind.String
+                                         && bool.TryParse(feeFlagElement.GetString(), out _)));
                 var feesEnabled = ReadBoolean(root, "feesEnabled");
+                var rateText = root.TryGetProperty("feeSchedule", out var scheduleElement)
+                               && scheduleElement.ValueKind == JsonValueKind.Object
+                    ? ReadString(scheduleElement, "rate")
+                    : null;
+                var exponentText = root.TryGetProperty("feeSchedule", out scheduleElement)
+                                   && scheduleElement.ValueKind == JsonValueKind.Object
+                    ? ReadString(scheduleElement, "exponent")
+                    : null;
+                var rate = 0m;
+                var exponent = 0m;
                 var hasFeeParameters = root.TryGetProperty("feeSchedule", out var feeScheduleElement)
                     && feeScheduleElement.ValueKind == JsonValueKind.Object
-                    && ReadString(feeScheduleElement, "rate") is not null
-                    && ReadString(feeScheduleElement, "exponent") is not null;
-                var schedule = hasFeeParameters
-                    ? new FeeSchedule(
+                    && decimal.TryParse(rateText, NumberStyles.Float, CultureInfo.InvariantCulture, out rate)
+                    && decimal.TryParse(exponentText, NumberStyles.Float, CultureInfo.InvariantCulture, out exponent)
+                    && rate >= 0m
+                    && exponent >= 0m;
+                var schedule = hasFeeFlag && !feesEnabled
+                    ? MarketFeeSchedule.NoFees
+                    : hasFeeFlag && hasFeeParameters
+                    ? new MarketFeeSchedule(
                         true,
                         feesEnabled,
-                        ReadDecimal(feeScheduleElement, "rate"),
-                        ReadDecimal(feeScheduleElement, "exponent"))
-                    : feesEnabled
-                        ? FeeSchedule.Unavailable
-                        : FeeSchedule.NoFees;
+                        rate,
+                        exponent)
+                    : MarketFeeSchedule.Unavailable(
+                        hasFeeFlag
+                            ? "Parâmetros de taxa ausentes ou inválidos na resposta da Gamma API."
+                            : "A resposta da Gamma API não informou se o mercado cobra taxa.");
 
                 if (schedule.IsAvailable)
                 {
@@ -945,13 +969,13 @@ public sealed class PolymarketApiClient
 
                 return schedule;
             }
-            catch (HttpRequestException)
+            catch (HttpRequestException exception)
             {
-                return FeeSchedule.Unavailable;
+                return MarketFeeSchedule.Unavailable(exception.Message);
             }
-            catch (JsonException)
+            catch (JsonException exception)
             {
-                return FeeSchedule.Unavailable;
+                return MarketFeeSchedule.Unavailable(exception.Message);
             }
         }
         finally
@@ -1131,12 +1155,6 @@ public sealed class PolymarketApiClient
         }
 
         return volume >= 1_000m ? $"${volume / 1_000m:N0}k vol. 24h" : $"${volume:N0} vol. 24h";
-    }
-
-    private readonly record struct FeeSchedule(bool IsAvailable, bool FeesEnabled, decimal Rate, decimal Exponent)
-    {
-        public static FeeSchedule NoFees => new(true, false, 0m, 1m);
-        public static FeeSchedule Unavailable => new(false, false, 0m, 1m);
     }
 
     private sealed class OrderBookState

@@ -2,7 +2,7 @@
 
 Aplicativo desktop WPF (.NET 8) para monitoramento de carteiras da Polymarket e execução de ordens reais e simuladas (Paper Trading) via Polymarket CLOB.
 
-A interface utiliza [ModernWpfUI](https://github.com/Kinnara/ModernWpf), com temas claro/escuro integrados ao Windows e visual inspirado no terminal da Polymarket. As páginas **Visão geral**, **Carteiras**, **Mercados**, **Terminal simulado**, **Trades copiados** e **Configurações** são navegadas de forma independente com notificações em tempo real.
+A interface utiliza [ModernWpfUI](https://github.com/Kinnara/ModernWpf), com temas claro/escuro integrados ao Windows e visual inspirado no terminal da Polymarket. As páginas **Visão geral**, **Carteiras**, **Mercados**, **Terminal simulado**, **Monitor de book**, **Trades copiados** e **Configurações** são navegadas de forma independente com notificações em tempo real.
 
 A página **Análise de carteira** lista as carteiras acompanhadas e a carteira própria, consulta até 30 trades recentes e estima sinais de estilo (como giro rápido, convicção, diversificação ou possível automação). O relatório inclui o valor bruto das compras e estima resultado realizado por FIFO apenas quando encontra compras e vendas pareáveis do mesmo token na amostra; o retorno percentual usa somente o custo pareado, não o aporte total da carteira. Operações iniciadas antes dos 30 trades e taxas indisponíveis podem deixar o resultado incompleto. O período exibido vai do trade mais antigo ao mais recente da amostra. Também permite pesquisar qualquer endereço público sem adicioná-lo nem salvá-lo. Essas classificações são indicativas e não comprovam intenção, automação, margem ou rentabilidade.
 
@@ -39,6 +39,11 @@ A página **Análise de carteira** lista as carteiras acompanhadas e a carteira 
 ### 5. Terminal Simulado (Paper Trading)
 - Book em tempo real via WebSocket da CLOB.
 - Execução virtual com cálculo de PnL realizado/não realizado, taxas e liquidação automática na confirmação dos mercados.
+
+### 6. Monitor de book
+- Acompanha mercados cripto binários ativos de 5 minutos, 15 minutos ou 1 hora pelo book público da CLOB.
+- Estima a venda de 1 share de cada resultado complementar usando profundidade dos bids e descontando as taxas taker atuais do mercado. A meta líquida é configurável; mercados sem book suficiente ou sem parâmetros de taxa disponíveis não são tratados como oportunidades confirmadas.
+- Exibe o valor líquido do par e o excedente sobre $1,00. Esse excedente não considera o custo de aquisição das shares. O monitor é somente leitura e não envia ordens.
 
 ---
 
