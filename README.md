@@ -43,6 +43,7 @@ A página **Análise de carteira** lista as carteiras acompanhadas e a carteira 
 ### 6. Monitor de book
 - Acompanha mercados cripto binários ativos de 5 minutos, 15 minutos ou 1 hora pelo book público da CLOB.
 - Estima a venda de 1 share de cada resultado complementar usando profundidade dos bids e descontando as taxas taker atuais do mercado. A meta líquida é configurável; mercados sem book suficiente ou sem parâmetros de taxa disponíveis não são tratados como oportunidades confirmadas.
+- Exibe uma força relativa entre Up e Down, combinando em partes iguais a proporção do melhor bid e a proporção da profundidade total dos bids. É um indicador do book atual, não uma previsão de resultado.
 - Exibe o valor líquido do par e o excedente sobre $1,00. Esse excedente não considera o custo de aquisição das shares. O monitor é somente leitura e não envia ordens.
 
 ---

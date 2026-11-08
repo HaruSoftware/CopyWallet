@@ -17,6 +17,7 @@ public sealed class MarketOpportunityQuote
     public string TimeRemainingLabel => Market.TimeRemainingLabel;
     public string FirstBidLabel => FormatBid(FirstOutcome, FirstBook);
     public string SecondBidLabel => FormatBid(SecondOutcome, SecondBook);
+    public string DirectionalStrengthLabel => FormatDirectionalStrength();
     public string TargetLabel => TargetAmount.HasValue
         ? $"Meta líquida: ${TargetAmount.Value.ToString("0.00", CultureInfo.CurrentCulture)}"
         : "Meta inválida";
@@ -88,6 +89,59 @@ public sealed class MarketOpportunityQuote
         var bestBid = bids.Max(level => level.Price);
         var availableShares = bids.Sum(level => level.Shares);
         return $"{outcome.Name}: {bestBid:P1} · depth {availableShares:N2}";
+    }
+
+    private string FormatDirectionalStrength()
+    {
+        var firstBids = GetValidBids(FirstBook);
+        var secondBids = GetValidBids(SecondBook);
+        if (firstBids.Length == 0 || secondBids.Length == 0)
+        {
+            return "Aguardando bids dos dois lados";
+        }
+
+        var firstBestBid = firstBids.Max(level => level.Price);
+        var secondBestBid = secondBids.Max(level => level.Price);
+        var firstDepth = firstBids.Sum(level => level.Shares);
+        var secondDepth = secondBids.Sum(level => level.Shares);
+        var totalBestBid = firstBestBid + secondBestBid;
+        var totalDepth = firstDepth + secondDepth;
+        if (totalBestBid <= 0m || totalDepth <= 0m)
+        {
+            return "Aguardando bids dos dois lados";
+        }
+
+        var firstStrength = ((firstBestBid / totalBestBid) + (firstDepth / totalDepth)) / 2m;
+        var secondStrength = 1m - firstStrength;
+        var firstDirection = GetDirectionLabel(FirstOutcome, 1);
+        var secondDirection = GetDirectionLabel(SecondOutcome, 2);
+        return firstDirection == "DOWN" && secondDirection == "UP"
+            ? $"UP {secondStrength:P0} · DOWN {firstStrength:P0}"
+            : $"{firstDirection} {firstStrength:P0} · {secondDirection} {secondStrength:P0}";
+    }
+
+    private static OrderBookLevel[] GetValidBids(MarketOrderBook? book) =>
+        book?.Bids
+            .Where(level => level.Price is > 0m and <= 1m && level.Shares > 0m)
+            .ToArray()
+        ?? [];
+
+    private static string GetDirectionLabel(MarketOutcome outcome, int index)
+    {
+        var name = outcome.Name.Trim();
+        if (name.Equals("up", StringComparison.OrdinalIgnoreCase)
+            || name.Equals("yes", StringComparison.OrdinalIgnoreCase))
+        {
+            return "UP";
+        }
+
+        if (name.Equals("down", StringComparison.OrdinalIgnoreCase)
+            || name.Equals("no", StringComparison.OrdinalIgnoreCase))
+        {
+            return "DOWN";
+        }
+
+        return $"LADO {index}";
     }
 
     private static (decimal Shares, decimal NetProceeds) EstimateSell(

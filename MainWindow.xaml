@@ -7,6 +7,7 @@
         xmlns:controls="clr-namespace:WalletCopy.Controls"
         Title="Wallet Copy — Polymarket"
         Width="1460" Height="940" MinWidth="1120" MinHeight="720"
+        WindowState="Maximized"
         WindowStartupLocation="CenterScreen"
         Icon="{DynamicResource AppIcon}"
         Background="{DynamicResource ThemeBackground}" Foreground="{DynamicResource ThemeText}" FontFamily="Arial"

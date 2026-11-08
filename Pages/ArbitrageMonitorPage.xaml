@@ -65,7 +65,7 @@
                 </StackPanel>
             </Grid>
 
-            <TextBlock Text="A comparação usa bids executáveis e profundidade do book; as taxas taker atuais do mercado são descontadas. Excedente sobre $1,00 não considera seu custo de aquisição. Nenhuma ordem será enviada."
+            <TextBlock Text="A força combina melhor bid e profundidade total dos bids (50% cada), comparando Up e Down; é uma leitura relativa do book, não uma previsão. A comparação líquida usa bids executáveis e desconta as taxas taker atuais. O excedente sobre $1,00 não considera seu custo de aquisição. Nenhuma ordem será enviada."
                        Foreground="{DynamicResource ThemeMuted}" FontSize="10" Margin="0,0,0,12"
                        TextWrapping="Wrap"/>
             <Border Background="{DynamicResource ThemePanelRaised}" BorderBrush="{DynamicResource ThemeBorder}"
@@ -138,6 +138,10 @@
                                     </StackPanel>
                                 </StackPanel>
                                 <StackPanel Grid.Column="4" VerticalAlignment="Center">
+                                    <TextBlock Text="FORÇA · UP / DOWN" FontSize="8" FontWeight="Bold"
+                                               Foreground="{DynamicResource ThemeMuted}"/>
+                                    <TextBlock Text="{Binding DirectionalStrengthLabel}" FontSize="11"
+                                               FontWeight="Bold" Margin="0,3,0,5" TextWrapping="Wrap"/>
                                     <TextBlock Text="{Binding StatusLabel}" FontSize="10" FontWeight="Bold"
                                                Foreground="{DynamicResource ThemeSecondary}" TextWrapping="Wrap"/>
                                     <TextBlock Text="{Binding TargetLabel}" FontSize="9"
